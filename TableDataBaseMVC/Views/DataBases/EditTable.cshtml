@@ -1,0 +1,43 @@
+﻿@model TableDataBase.Models.Table
+
+@{
+    ViewData["Title"] = Model.Name;
+}
+
+<h1>Table designer: @ViewData["Title"]</h1>
+<hr />
+<div class="btn-group btn-group-sm" role="group">
+    <a class="btn btn-outline-dark" asp-action="CreateProperty" asp-route-tableguid="@Model.Guid" asp-route-dbguid="@ViewData["DbGuid"]">Add column</a>
+    <a class="btn btn-outline-dark" asp-action="CreateRelation" asp-route-tableguid="@Model.Guid" asp-route-dbguid="@ViewData["DbGuid"]">Add relation</a>
+    <a class="btn btn-outline-dark" asp-action="Tables" asp-route-guid="@ViewData["DbGuid"]">Back</a>
+</div>
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.Name)
+            </th>
+            <th>
+                Type
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model.AttributeProperties)
+        {
+            <tr>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Name)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.AttributeType)
+                </td>
+                <td class="text-end">
+                    <a asp-action="EditProperty" asp-route-guid="@item.Guid" asp-route-tableguid="@Model.Guid" asp-route-dbguid="@ViewData["DbGuid"]">Edit</a> |
+                    <a asp-action="DeleteProperty" asp-route-guid="@item.Guid" asp-route-tableguid="@Model.Guid" asp-route-dbguid="@ViewData["DbGuid"]">Delete</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

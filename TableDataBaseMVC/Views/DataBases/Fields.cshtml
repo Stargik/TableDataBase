@@ -1,0 +1,65 @@
+﻿@model IEnumerable<TableDataBase.Models.TableField>
+
+@{
+    ViewData["Title"] = ViewBag.Table.Name;
+}
+
+<h1>@ViewData["Title"]: Fields</h1>
+<div class="btn-group btn-group-sm" role="group">
+    <a class="btn btn-outline-dark" asp-action="CreateField" asp-route-tableguid="@ViewBag.Table.Guid" asp-route-dbguid="@ViewData["DbGuid"]">Add field</a>
+    <a class="btn btn-outline-dark" asp-action="Tables" asp-route-guid="@ViewData["DbGuid"]">Back</a>
+</div>
+<table class="table table-bordered mt-2">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.Guid)
+            </th>
+            @foreach (var column in ((TableDataBase.Models.Table)ViewBag.Table).AttributeProperties.OrderBy(p => p.Guid))
+            {
+                <th>
+                    @column.Name (@column.AttributeType)
+                </th>
+            }
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <form asp-action="Fields" id="filterForm" asp-route-tableGuid="@ViewBag.Table.Guid" asp-route-dbguid="@ViewData["DbGuid"]" method="get">
+                <input type="hidden" form="filterForm" name="tableGuid" value="@ViewBag.Table.Guid" />
+                <input type="hidden" form="filterForm" name="dbguid" value="@ViewData["DbGuid"]" />
+            </form>
+            <th>
+                <input type="text" class="form-control form-control-sm" form="filterForm" name="@ViewBag.Table.Guid" value="@ViewBag.FilterValues[ViewBag.Table.Guid]" />
+            </th>
+            @foreach (var column in ((TableDataBase.Models.Table)ViewBag.Table).AttributeProperties.OrderBy(p => p.Guid))
+            {
+                <th>
+                    <input type="text" class="form-control form-control-sm" form="filterForm" name="@column.Guid" value="@ViewBag.FilterValues[column.Guid]" />
+                </th>
+            }
+            <th><input type="submit" form="filterForm" value="Filter" class="btn btn-primary btn-sm form-control form-control-sm" /></th>
+        </tr>
+        @foreach (var field in Model)
+        {
+            <tr>
+                <td>
+                    @field.Guid
+                </td>
+                @foreach (var column in field.Values.OrderBy(val => val.Key))
+                {
+                    <td>
+                        @column.Value
+                    </td>
+                }
+                <td class="text-end">
+                    <a asp-action="EditField" asp-route-guid="@field.Guid" asp-route-tableguid="@ViewBag.Table.Guid" asp-route-dbguid="@ViewData["DbGuid"]">Edit</a> |
+                    <a asp-action="DeleteField" asp-route-guid="@field.Guid" asp-route-tableguid="@ViewBag.Table.Guid" asp-route-dbguid="@ViewData["DbGuid"]">Delete</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+

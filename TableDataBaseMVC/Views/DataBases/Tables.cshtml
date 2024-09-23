@@ -1,0 +1,37 @@
+﻿@model TableDataBase.Models.DataBase
+
+@{
+    ViewData["Title"] = Model.Name;
+}
+
+<h1>@ViewData["Title"]: Tables</h1>
+<div class="btn-group btn-group-sm" role="group">
+    <a class="btn btn-outline-dark" asp-action="CreateTable" asp-route-dbguid="@Model.Guid">Add table</a>
+    <a class="btn btn-outline-dark" asp-action="Index">Back</a>
+</div>
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.Name)
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model.Tables)
+        {
+            <tr>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Name)
+                </td>
+                <td class="text-end">
+                    <a asp-action="EditTable" asp-route-guid="@item.Guid" asp-route-dbguid="@Model.Guid">Table design</a> |
+                    <a asp-action="Fields" asp-route-tableGuid="@item.Guid" asp-route-dbguid="@Model.Guid">Fields</a> |
+                    <a asp-action="DeleteTable" asp-route-guid="@item.Guid" asp-route-dbguid="@Model.Guid">Delete</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
