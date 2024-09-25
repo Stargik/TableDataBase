@@ -1,8 +1,6 @@
-﻿using System;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.CodeAnalysis;
-using Syncfusion.EJ2.Grids;
 using TableDataBase.Interfaces;
 using TableDataBase.Models;
 using TableDataBase.Services;
@@ -12,15 +10,45 @@ namespace TableDataBaseMVC.Controllers
 {
 	public class DataBasesController : Controller
     {
-		public readonly IDataBaseSchemaService dataBaseSchemaService;
+		private static IDataBaseSchemaService? dataBaseSchemaService;
+        private static string? connectionString;
+        private readonly bool isLocal;
 
-        public DataBasesController(IDataBaseSchemaService dataBaseSchemaService)
+        public DataBasesController(IConfiguration configuration)
         {
-            this.dataBaseSchemaService = dataBaseSchemaService;
+            isLocal = configuration.GetValue<bool>("IsLocal");
+        }
+
+        public IActionResult SetConnection()
+        {
+            return View();
+        }
+
+        public IActionResult ResetConnection()
+        {
+            connectionString = null;
+            dataBaseSchemaService = null;
+            return RedirectToAction(nameof(SetConnection));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult SetConnection(ConnectionModel connectionModel)
+        {
+            connectionString = connectionModel.ConnectionString;
+            if (!String.IsNullOrEmpty(connectionString))
+            {
+                dataBaseSchemaService = new DataBaseSchemaClientService(connectionString);
+            }
+            return RedirectToAction(nameof(Index));
         }
 
         public IActionResult Index()
         {
+            if (String.IsNullOrEmpty(connectionString))
+            {
+                return RedirectToAction(nameof(SetConnection));
+            }
             var dbs = dataBaseSchemaService.GetAllDbObjects();
             return View(dbs);
         }
@@ -85,9 +113,7 @@ namespace TableDataBaseMVC.Controllers
                 var attrProperty = new AttributeProperty { Name = attributePropertyModel.Name, Guid = Guid.NewGuid(), AttributeType = attributePropertyModel.AttributeType };
                 dataBaseSchemaService.AddAttributeProperty(attrProperty, attributePropertyModel.TableGuid, attributePropertyModel.DbGuid);
                 dataBaseSchemaService.SaveChanges();
-                var fileName = dataBaseSchemaService.GetDbFileNameByGuid(attributePropertyModel.DbGuid);
-                var filePath = dataBaseSchemaService.GetDbFilePath();
-                var dataBaseService = new DataBaseService(filePath, fileName);
+                var dataBaseService = GetDataBaseService(attributePropertyModel.DbGuid);
                 var fields = dataBaseService.GetAllFieldsByTableGuid(attributePropertyModel.TableGuid);
                 foreach (var field in fields)
                 {
@@ -118,9 +144,7 @@ namespace TableDataBaseMVC.Controllers
                 var attrProperty = new AttributeProperty { Name = relationModel.Name, Guid = Guid.NewGuid(), AttributeType = AttributeType.Relation, RelationTableGuid = relationModel.RelationTableGuid };
                 dataBaseSchemaService.AddRelation(attrProperty, relationModel.TableGuid, relationTable.Guid, relationModel.DbGuid);
                 dataBaseSchemaService.SaveChanges();
-                var fileName = dataBaseSchemaService.GetDbFileNameByGuid(relationModel.DbGuid);
-                var filePath = dataBaseSchemaService.GetDbFilePath();
-                var dataBaseService = new DataBaseService(filePath, fileName);
+                var dataBaseService = GetDataBaseService(relationModel.DbGuid);
                 var fields = dataBaseService.GetAllFieldsByTableGuid(relationModel.TableGuid);
                 foreach (var field in fields)
                 {
@@ -139,9 +163,7 @@ namespace TableDataBaseMVC.Controllers
         public IActionResult Delete(Guid guid)
         {
             var tableGuids = dataBaseSchemaService.GetAllTablesByDbGuid(guid).Select(x => x.Guid);
-            var fileName = dataBaseSchemaService.GetDbFileNameByGuid(guid);
-            var filePath = dataBaseSchemaService.GetDbFilePath();
-            var dataBaseService = new DataBaseService(filePath, fileName);
+            var dataBaseService = GetDataBaseService(guid);
             foreach (var tableGuid in tableGuids)
             {
                 var fieldGuids = dataBaseService.GetAllFieldsByTableGuid(tableGuid).Select(x => x.Guid);
@@ -159,9 +181,7 @@ namespace TableDataBaseMVC.Controllers
 
         public IActionResult DeleteTable(Guid guid, Guid dbGuid)
         {
-            var fileName = dataBaseSchemaService.GetDbFileNameByGuid(dbGuid);
-            var filePath = dataBaseSchemaService.GetDbFilePath();
-            var dataBaseService = new DataBaseService(filePath, fileName);
+            var dataBaseService = GetDataBaseService(dbGuid);
             var fieldGuids = dataBaseService.GetAllFieldsByTableGuid(guid).Select(x => x.Guid);
             foreach (var fieldGuid in fieldGuids)
             {
@@ -176,9 +196,7 @@ namespace TableDataBaseMVC.Controllers
 
         public IActionResult DeleteProperty(Guid guid, Guid tableGuid, Guid dbGuid)
         {
-            var fileName = dataBaseSchemaService.GetDbFileNameByGuid(dbGuid);
-            var filePath = dataBaseSchemaService.GetDbFilePath();
-            var dataBaseService = new DataBaseService(filePath, fileName);
+            var dataBaseService = GetDataBaseService(dbGuid);
             var fields = dataBaseService.GetAllFieldsByTableGuid(tableGuid);
             foreach (var field in fields)
             {
@@ -211,9 +229,7 @@ namespace TableDataBaseMVC.Controllers
                 filterValues.Add(filter.Guid, Request.Query.ContainsKey(filter.Guid.ToString()) ? Request.Query[filter.Guid.ToString()].ToString() : "");
             }
             ViewBag.FilterValues = filterValues;
-            var fileName = dataBaseSchemaService.GetDbFileNameByGuid(dbGuid);
-            var filePath = dataBaseSchemaService.GetDbFilePath();
-            var dataBaseService = new DataBaseService(filePath, fileName);
+            var dataBaseService = GetDataBaseService(dbGuid);
             var properties = dataBaseService.GetAllFieldsByTableGuid(tableGuid);
             foreach (var filterValue in filterValues)
             {
@@ -269,9 +285,7 @@ namespace TableDataBaseMVC.Controllers
             if (ModelState.IsValid)
             {
                 var tableField = new TableField { Guid = tableFieldModel.Guid, TableGuid = tableFieldModel.TableGuid, Values = tableFieldModel.Values };
-                var fileName = dataBaseSchemaService.GetDbFileNameByGuid(dbGuid);
-                var filePath = dataBaseSchemaService.GetDbFilePath();
-                var dataBaseService = new DataBaseService(filePath, fileName);
+                var dataBaseService = GetDataBaseService(dbGuid);
                 dataBaseService.AddField(tableField);
                 dataBaseService.SaveChanges();
                 return RedirectToAction("Fields", new { tableGuid, dbGuid });
@@ -281,9 +295,7 @@ namespace TableDataBaseMVC.Controllers
 
         public IActionResult DeleteField(Guid guid, Guid tableGuid, Guid dbGuid)
         {
-            var fileName = dataBaseSchemaService.GetDbFileNameByGuid(dbGuid);
-            var filePath = dataBaseSchemaService.GetDbFilePath();
-            var dataBaseService = new DataBaseService(filePath, fileName);
+            var dataBaseService = GetDataBaseService(dbGuid);
             dataBaseService.RemoveFieldByGuid(guid);
             dataBaseService.SaveChanges();
             return RedirectToAction("Fields", new { tableGuid, dbGuid });
@@ -292,9 +304,7 @@ namespace TableDataBaseMVC.Controllers
         public IActionResult EditField(Guid guid, Guid tableGuid, Guid dbGuid)
         {
             var table = dataBaseSchemaService.GetTableByGuid(tableGuid, dbGuid);
-            var fileName = dataBaseSchemaService.GetDbFileNameByGuid(dbGuid);
-            var filePath = dataBaseSchemaService.GetDbFilePath();
-            var dataBaseService = new DataBaseService(filePath, fileName);
+            var dataBaseService = GetDataBaseService(dbGuid);
             var tableField = dataBaseService.GetFieldByGuid(guid);
             ViewBag.Table = table;
             var tableFieldModel = new TableFieldModel
@@ -333,14 +343,28 @@ namespace TableDataBaseMVC.Controllers
             if (ModelState.IsValid)
             {
                 var tableField = new TableField { Guid = tableFieldModel.Guid, TableGuid = tableFieldModel.TableGuid, Values = tableFieldModel.Values };
-                var fileName = dataBaseSchemaService.GetDbFileNameByGuid(dbGuid);
-                var filePath = dataBaseSchemaService.GetDbFilePath();
-                var dataBaseService = new DataBaseService(filePath, fileName);
+                var dataBaseService = GetDataBaseService(dbGuid);
                 dataBaseService.UpdateField(tableField);
                 dataBaseService.SaveChanges();
                 return RedirectToAction("Fields", new { tableGuid, dbGuid });
             }
             return View(tableFieldModel);
+        }
+
+        private IDataBaseService GetDataBaseService(Guid dbGuid)
+        {
+            if (isLocal)
+            {
+                var fileName = dataBaseSchemaService.GetDbFileNameByGuid(dbGuid);
+                var filePath = dataBaseSchemaService.GetDbFilePath();
+                var dataBaseService = new DataBaseService(filePath, fileName);
+                return dataBaseService;
+            }
+            else
+            {
+                var dataBaseService = new DataBaseClientService(connectionString, dbGuid.ToString());
+                return dataBaseService;
+            }
         }
     }
 }

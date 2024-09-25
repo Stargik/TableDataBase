@@ -1,4 +1,6 @@
 ﻿using TableDataBase.Models;
+using Grpc.Net.Client;
+using TableDataBaseServerService;
 using TableDataBase.Interfaces;
 using TableDataBase.Services;
 
@@ -21,7 +23,7 @@ class Program
             Name = "Name"
         };
 
-        Table table = new Table
+        Table table1 = new Table
         {
             Guid = Guid.NewGuid(),
             Name = "table1",
@@ -47,7 +49,7 @@ class Program
             Name = "db1",
             Tables = new List<Table>
             {
-                table, table2
+                table1, table2
             }
         };
 
@@ -62,14 +64,16 @@ class Program
             Values = values
         };
 
-        var filePath = "TableServer";
+        IDataBaseSchemaService dataBaseSchemaService = new DataBaseSchemaClientService("https://localhost:7099");
+        dataBaseSchemaService.AddJsonDbObjectSchema(dataBase);
+        /*var filePath = "TableServer";
         var fileName = "schema.json";
         IDataBaseSchemaService dataBaseSchemaService = new DataBaseSchemaService(filePath, fileName);
         dataBaseSchemaService.AddJsonDbObjectSchema(dataBase);
         dataBaseSchemaService.SaveChanges();
-        var prop = dataBaseSchemaService.GetAttributePropertyByGuid(attributeProperty1.Guid, table.Guid, dataBase.Guid);
+        var prop = dataBaseSchemaService.GetAttributePropertyByGuid(attributeProperty1.Guid, table1.Guid, dataBase.Guid);
         prop.Name = "prop2";
-        dataBaseSchemaService.UpdateAttributeProperty(prop, table.Guid, dataBase.Guid);
+        dataBaseSchemaService.UpdateAttributeProperty(prop, table1.Guid, dataBase.Guid);
         dataBaseSchemaService.SaveChanges();
         Guid guid = dataBase.Guid;
         var dbFileName = dataBaseSchemaService.GetDbFileNameByGuid(dataBase.Guid);
@@ -77,7 +81,37 @@ class Program
         dataBaseService.AddField(field);
         dataBaseService.SaveChanges();
         dataBaseSchemaService.RemoveJsonDbObjectSchemaByGuid(dataBase.Guid);
-        dataBaseSchemaService.SaveChanges();
+        dataBaseSchemaService.SaveChanges();*/
+
+        /*using var channel = GrpcChannel.ForAddress("https://localhost:7099");
+        var client = new TableDataBaseServise.TableDataBaseServiseClient(channel);
+        var dataBaseRequest = new AddJsonDbObjectSchemaRequest
+        {
+            Guid = dataBase.Guid.ToString(),
+            Name = dataBase.Name,
+        };
+
+        var tables = dataBase.Tables.Select(t => new TableReply
+        {
+            Guid = t.Guid.ToString(),
+            Name = t.Name
+        }).ToList();
+
+        foreach (var table in tables)
+        {
+            var props = dataBase.Tables.FirstOrDefault(x => x.Guid == Guid.Parse(table.Guid)).AttributeProperties.Select(p => new AttributePropertyReply
+            {
+                Guid = p.Guid.ToString(),
+                Name = p.Name,
+                AttributeType = (int)p.AttributeType,
+                RelationTableGuid = p.RelationTableGuid.ToString()
+            }).ToList();
+            table.AttributeProperties.AddRange(props);
+        }
+
+        dataBaseRequest.Tables.AddRange(tables);
+
+        client.AddJsonDbObjectSchema(dataBaseRequest);*/
     }
 }
 

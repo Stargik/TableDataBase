@@ -1,0 +1,234 @@
+﻿syntax = "proto3";
+
+option csharp_namespace = "TableDataBaseServerService";
+
+import "google/protobuf/empty.proto";
+
+package databaseservice;
+
+service TableDataBaseServise {
+
+		rpc AddJsonDbObjectSchema(AddJsonDbObjectSchemaRequest) returns (google.protobuf.Empty);
+		rpc RemoveJsonDbObjectSchemaByGuid(RemoveJsonDbObjectSchemaByGuidRequest) returns (google.protobuf.Empty);
+        rpc GetDbObjectByGuid(GetDbObjectByGuidRequest) returns (DataBaseReply);
+        rpc GetAllDbObjects(google.protobuf.Empty) returns (ListDataBaseReply);
+		rpc UpdateJsonDbObjectSchema(UpdateJsonDbObjectSchemaRequest) returns (google.protobuf.Empty);
+
+        rpc AddTable(AddTableRequest) returns (google.protobuf.Empty);
+        rpc RemoveTableByGuid(RemoveTableByGuidRequest) returns (google.protobuf.Empty);
+        rpc GetTableByGuid(GetTableByGuidRequest) returns (TableReply);
+        rpc GetAllTablesByDbGuid(GetAllTablesByDbGuidRequest) returns (ListTableReply);
+        rpc UpdateTable(UpdateTableRequest) returns (google.protobuf.Empty);
+
+        rpc AddAttributeProperty(AddAttributePropertyRequest) returns (google.protobuf.Empty);
+        rpc RemoveAttributePropertyByGuid(RemoveAttributePropertyByGuidRequest) returns (google.protobuf.Empty);
+        rpc GetAttributePropertyByGuid(GetAttributePropertyByGuidRequest) returns (AttributePropertyReply);
+		rpc GetAllAttributePropertiesByDbTableGuid(GetAllAttributePropertiesByDbTableGuidRequest) returns (ListAttributePropertyReply);
+        rpc UpdateAttributeProperty(UpdateAttributePropertyRequest) returns (google.protobuf.Empty);
+
+        rpc AddRelation(AddRelationRequest) returns (google.protobuf.Empty);
+
+        rpc GetDbFileNameByGuid(GetDbFileNameByGuidRequest) returns (StringReply);
+        rpc GetDbFilePath(google.protobuf.Empty) returns (StringReply);
+
+        rpc AddField(AddFieldRequest) returns (google.protobuf.Empty);
+		rpc RemoveFieldByGuid(RemoveFieldByGuidRequest) returns (google.protobuf.Empty);
+		rpc GetFieldByGuid(GetFieldByGuidRequest) returns (TableFieldReply);
+		rpc GetAllFieldsByTableGuid(GetAllFieldsByTableGuidRequest) returns (ListTableFieldReply);
+		rpc UpdateField(UpdateFieldRequest) returns (google.protobuf.Empty);
+
+		rpc UpdateValue(UpdateValueRequest) returns (google.protobuf.Empty);
+}
+
+message AddJsonDbObjectSchemaRequest
+{
+	string guid = 1; 
+    string name = 2;
+	repeated TableReply tables = 3;
+}
+
+message RemoveJsonDbObjectSchemaByGuidRequest
+{
+	string guid = 1; 
+}
+
+message GetDbObjectByGuidRequest
+{
+	string guid = 1; 
+}
+
+message UpdateJsonDbObjectSchemaRequest
+{
+	string guid = 1; 
+    string Name = 2;
+	repeated TableReply Tables = 3;
+}
+
+message AddTableRequest
+{
+	TableReply Table = 1; 
+    string dbGuid = 2;
+}
+
+message RemoveTableByGuidRequest
+{
+	string guid = 1;
+    string dbGuid = 2; 
+}
+
+message GetTableByGuidRequest
+{
+	string guid = 1;
+    string dbGuid = 2; 
+}
+
+message GetAllTablesByDbGuidRequest
+{
+    string dbGuid = 1;
+}
+
+message UpdateTableRequest
+{
+	TableReply Table = 1; 
+    string dbGuid = 2;
+}
+
+message AddAttributePropertyRequest
+{
+    AttributePropertyReply attributePropertyReply = 1;
+	string tableGuid = 2;
+    string dbGuid = 3; 
+}
+
+message RemoveAttributePropertyByGuidRequest
+{
+	string guid = 1;
+	string tableGuid = 2;
+    string dbGuid = 3; 
+}
+
+message GetAttributePropertyByGuidRequest
+{
+	string guid = 1;
+	string tableGuid = 2;
+    string dbGuid = 3; 
+}
+
+message GetAllAttributePropertiesByDbTableGuidRequest
+{
+	string tableGuid = 1;
+    string dbGuid = 2; 
+}
+
+message UpdateAttributePropertyRequest
+{
+    AttributePropertyReply attributePropertyReply = 1;
+	string tableGuid = 2;
+    string dbGuid = 3; 
+}
+
+message AddRelationRequest
+{
+    AttributePropertyReply attributePropertyReply = 1;
+	string tableGuid = 2;
+    string targetTableGuid = 3;
+    string dbGuid = 4; 
+}
+
+message GetDbFileNameByGuidRequest
+{
+	string guid = 1; 
+}
+
+message DataBaseReply
+{
+	string guid = 1; 
+    string name = 2;
+	repeated TableReply tables = 3;
+}
+
+message ListDataBaseReply
+{
+	repeated DataBaseReply dataBases = 1;
+}
+
+message TableReply
+{
+	string guid = 1; 
+    string name = 2;
+	repeated AttributePropertyReply attributeProperties = 3;
+}
+
+message ListTableReply
+{
+	repeated TableReply tables = 1;
+}
+
+message AttributePropertyReply
+{
+	string guid = 1;
+    string name = 2;
+	int32 attributeType = 3;
+    string relationTableGuid = 4;
+}
+
+message ListAttributePropertyReply
+{
+	repeated AttributePropertyReply attributeProperties = 3;
+}
+
+message StringReply
+{
+	string stringValue = 1;
+}
+
+message AddFieldRequest{
+	string guid = 1;
+	string tableGuid = 2;
+	repeated ValueReply values = 3;
+	string dbGuid = 4; 
+}
+
+message RemoveFieldByGuidRequest{
+	string guid = 1;
+	string dbGuid = 2; 
+}
+
+message GetFieldByGuidRequest{
+	string guid = 1;
+	string dbGuid = 2; 
+}
+
+message GetAllFieldsByTableGuidRequest{
+	string tableGuid = 1;
+	string dbGuid = 2; 
+}
+
+message UpdateFieldRequest{
+	string guid = 1;
+	string tableGuid = 2;
+	repeated ValueReply values = 3;
+	string dbGuid = 4; 
+}
+
+message UpdateValueRequest{
+	string value = 1;
+	string attributePropertyGuid = 2;
+	string fieldGuid = 3;
+	string dbGuid = 4; 
+}
+
+message ValueReply{
+	string guid = 1;
+	string value = 2;
+}
+
+message TableFieldReply{
+	string guid = 1;
+	string tableGuid = 2;
+	repeated ValueReply values = 3;
+}
+
+message ListTableFieldReply{
+	repeated TableFieldReply tableFields = 1;
+}
