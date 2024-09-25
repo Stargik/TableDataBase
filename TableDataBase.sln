@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TableDataBaseMVC", "TableDa
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TableDataBaseServerService", "TableDataBaseServerService\TableDataBaseServerService.csproj", "{F7E2084A-36C3-45A1-810F-FADFB71EF63D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TableDataBaseWebApi", "TableDataBaseWebApi\TableDataBaseWebApi.csproj", "{3E53BB1E-E397-4857-AB0E-BCA3E6FD3649}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +35,10 @@ Global
 		{F7E2084A-36C3-45A1-810F-FADFB71EF63D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F7E2084A-36C3-45A1-810F-FADFB71EF63D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F7E2084A-36C3-45A1-810F-FADFB71EF63D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3E53BB1E-E397-4857-AB0E-BCA3E6FD3649}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3E53BB1E-E397-4857-AB0E-BCA3E6FD3649}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3E53BB1E-E397-4857-AB0E-BCA3E6FD3649}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3E53BB1E-E397-4857-AB0E-BCA3E6FD3649}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
