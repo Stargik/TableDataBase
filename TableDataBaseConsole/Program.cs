@@ -114,14 +114,6 @@ class Program
         dataBaseRequest.Tables.AddRange(tables);
 
         client.AddJsonDbObjectSchema(dataBaseRequest);*/
-
-<<<<<<< HEAD
-        // HTML-код, который нужно проверить
-        string html = "<p>hello</p>";
-
-=======
->>>>>>> 248dfe6 (Removed GUIDs, Added html type)
-
     }
 }
 
