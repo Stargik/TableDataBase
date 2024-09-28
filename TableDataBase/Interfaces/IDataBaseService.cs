@@ -8,10 +8,10 @@ namespace TableDataBase.Interfaces
 		void AddField(TableField tableField);
 		void RemoveFieldByGuid(Guid guid);
 		TableField? GetFieldByGuid(Guid guid);
-		List<TableField>? GetAllFieldsByTableGuid(Guid tableGuid);
+		List<TableField>? GetAllFieldsByTableName(string tableName);
 		void UpdateField(TableField tableField);
 
-		void UpdateValue(dynamic Value, Guid attributePropertyGuid, Guid fieldGuid);
+		void UpdateValue(dynamic Value, string attributePropertyName, Guid fieldGuid);
 
 		void SaveChanges();
     }

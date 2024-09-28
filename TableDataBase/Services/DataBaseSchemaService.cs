@@ -34,9 +34,9 @@ namespace TableDataBase.Services
             File.AppendAllText(dbFileName, "");
         }
 
-        public void RemoveJsonDbObjectSchemaByGuid(Guid guid)
+        public void RemoveJsonDbObjectSchemaByName(string name)
         {
-            var dataBase = dataBasesContext.FirstOrDefault(x => x.Guid == guid);
+            var dataBase = dataBasesContext.FirstOrDefault(x => x.Name == name);
             if (dataBase is not null)
             {
                 dataBasesContext.Remove(dataBase);
@@ -48,9 +48,9 @@ namespace TableDataBase.Services
             }
         }
 
-        public DataBase? GetDbObjectByGuid(Guid guid)
+        public DataBase? GetDbObjectByName(string name)
         {
-            var dataBase = dataBasesContext.FirstOrDefault(x => x.Guid == guid);
+            var dataBase = dataBasesContext.FirstOrDefault(x => x.Name == name);
             return dataBase;
         }
 
@@ -61,11 +61,11 @@ namespace TableDataBase.Services
 
         public void UpdateJsonDbObjectSchema(DataBase dataBase)
         {
-            var oldDataBase = dataBasesContext.FirstOrDefault(x => x.Guid == dataBase.Guid);
+            var oldDataBase = dataBasesContext.FirstOrDefault(x => x.Name == dataBase.Name);
             if (oldDataBase is not null)
             {
-                dataBase.Guid = oldDataBase.Guid;
-                oldDataBase = dataBase;
+                oldDataBase.Name = oldDataBase.Name;
+                oldDataBase.Tables = dataBase.Tables;
             }
             else
             {
@@ -73,21 +73,21 @@ namespace TableDataBase.Services
             }
         }
 
-        public void AddTable(Table table, Guid dbGuid)
+        public void AddTable(Table table, string dbName)
         {
-            var dataBase = dataBasesContext.FirstOrDefault(x => x.Guid == dbGuid);
+            var dataBase = dataBasesContext.FirstOrDefault(x => x.Name == dbName);
             if (dataBase is not null)
             {
                 dataBase.Tables.Add(table);
             }
         }
 
-        public void RemoveTableByGuid(Guid guid, Guid dbGuid)
+        public void RemoveTableByName(string name, string dbName)
         {
-            var dataBase = dataBasesContext.FirstOrDefault(x => x.Guid == dbGuid);
+            var dataBase = dataBasesContext.FirstOrDefault(x => x.Name == dbName);
             if (dataBase is not null)
             {
-                var table = dataBase.Tables.FirstOrDefault(x => x.Guid == guid);
+                var table = dataBase.Tables.FirstOrDefault(x => x.Name == name);
                 if (table is not null)
                 {
                     dataBase.Tables.Remove(table);
@@ -95,20 +95,20 @@ namespace TableDataBase.Services
             }
         }
 
-        public Table? GetTableByGuid(Guid guid, Guid dbGuid)
+        public Table? GetTableByName(string name, string dbName)
         {
-            var dataBase = dataBasesContext.FirstOrDefault(x => x.Guid == dbGuid);
+            var dataBase = dataBasesContext.FirstOrDefault(x => x.Name == dbName);
             if (dataBase is not null)
             {
-                var table = dataBase.Tables.FirstOrDefault(x => x.Guid == guid);
+                var table = dataBase.Tables.FirstOrDefault(x => x.Name == name);
                 return table;
             }
             return null;
         }
 
-        public List<Table>? GetAllTablesByDbGuid(Guid dbGuid)
+        public List<Table>? GetAllTablesByDbName(string dbName)
         {
-            var dataBase = dataBasesContext.FirstOrDefault(x => x.Guid == dbGuid);
+            var dataBase = dataBasesContext.FirstOrDefault(x => x.Name == dbName);
             if (dataBase is not null)
             {
                 return dataBase.Tables;
@@ -116,16 +116,16 @@ namespace TableDataBase.Services
             return null;
         }
 
-        public void UpdateTable(Table table, Guid dbGuid)
+        public void UpdateTable(Table table, string dbName)
         {
-            var dataBase = dataBasesContext.FirstOrDefault(x => x.Guid == dbGuid);
+            var dataBase = dataBasesContext.FirstOrDefault(x => x.Name == dbName);
             if (dataBase is not null)
             {
-                var oldTable = dataBase.Tables.FirstOrDefault(x => x.Guid == table.Guid);
+                var oldTable = dataBase.Tables.FirstOrDefault(x => x.Name == table.Name);
                 if (oldTable is not null)
                 {
-                    table.Guid = oldTable.Guid;
-                    oldTable = table;
+                    oldTable.Name = table.Name;
+                    oldTable.AttributeProperties = table.AttributeProperties;
                 }
                 else
                 {
@@ -134,12 +134,12 @@ namespace TableDataBase.Services
             }
         }
 
-        public void AddAttributeProperty(AttributeProperty attributeProperty, Guid tableGuid, Guid dbGuid)
+        public void AddAttributeProperty(AttributeProperty attributeProperty, string tableName, string dbName)
         {
-            var dataBase = dataBasesContext.FirstOrDefault(x => x.Guid == dbGuid);
+            var dataBase = dataBasesContext.FirstOrDefault(x => x.Name == dbName);
             if (dataBase is not null)
             {
-                var table = dataBase.Tables.FirstOrDefault(x => x.Guid == tableGuid);
+                var table = dataBase.Tables.FirstOrDefault(x => x.Name == tableName);
                 if (table is not null)
                 {
                     table.AttributeProperties.Add(attributeProperty);
@@ -147,15 +147,15 @@ namespace TableDataBase.Services
             }
         }
 
-        public void RemoveAttributePropertyByGuid(Guid guid, Guid tableGuid, Guid dbGuid)
+        public void RemoveAttributePropertyByName(string name, string tableName, string dbName)
         {
-            var dataBase = dataBasesContext.FirstOrDefault(x => x.Guid == dbGuid);
+            var dataBase = dataBasesContext.FirstOrDefault(x => x.Name == dbName);
             if (dataBase is not null)
             {
-                var table = dataBase.Tables.FirstOrDefault(x => x.Guid == tableGuid);
+                var table = dataBase.Tables.FirstOrDefault(x => x.Name == tableName);
                 if (table is not null)
                 {
-                    var attributeProperty = table.AttributeProperties.FirstOrDefault(x => x.Guid == guid);
+                    var attributeProperty = table.AttributeProperties.FirstOrDefault(x => x.Name == name);
                     if (attributeProperty is not null)
                     {
                         table.AttributeProperties.Remove(attributeProperty);
@@ -164,27 +164,27 @@ namespace TableDataBase.Services
             }
         }
 
-        public AttributeProperty? GetAttributePropertyByGuid(Guid guid, Guid tableGuid, Guid dbGuid)
+        public AttributeProperty? GetAttributePropertyByName(string name, string tableName, string dbName)
         {
-            var dataBase = dataBasesContext.FirstOrDefault(x => x.Guid == dbGuid);
+            var dataBase = dataBasesContext.FirstOrDefault(x => x.Name == dbName);
             if (dataBase is not null)
             {
-                var table = dataBase.Tables.FirstOrDefault(x => x.Guid == tableGuid);
+                var table = dataBase.Tables.FirstOrDefault(x => x.Name == tableName);
                 if (table is not null)
                 {
-                    var attributeProperty = table.AttributeProperties.FirstOrDefault(x => x.Guid == guid);
+                    var attributeProperty = table.AttributeProperties.FirstOrDefault(x => x.Name == name);
                     return attributeProperty;
                 }
             }
             return null;
         }
 
-        public List<AttributeProperty>? GetAllAttributePropertiesByDbTableGuid(Guid tableGuid, Guid dbGuid)
+        public List<AttributeProperty>? GetAllAttributePropertiesByDbTableName(string tableName, string dbName)
         {
-            var dataBase = dataBasesContext.FirstOrDefault(x => x.Guid == dbGuid);
+            var dataBase = dataBasesContext.FirstOrDefault(x => x.Name == dbName);
             if (dataBase is not null)
             {
-                var table = dataBase.Tables.FirstOrDefault(x => x.Guid == tableGuid);
+                var table = dataBase.Tables.FirstOrDefault(x => x.Name == tableName);
                 if (table is not null)
                 {
                     return table.AttributeProperties;
@@ -193,19 +193,19 @@ namespace TableDataBase.Services
             return null;
         }
 
-        public void UpdateAttributeProperty(AttributeProperty attributeProperty, Guid tableGuid, Guid dbGuid)
+        public void UpdateAttributeProperty(AttributeProperty attributeProperty, string tableName, string dbName)
         {
-            var dataBase = dataBasesContext.FirstOrDefault(x => x.Guid == dbGuid);
+            var dataBase = dataBasesContext.FirstOrDefault(x => x.Name == dbName);
             if (dataBase is not null)
             {
-                var table = dataBase.Tables.FirstOrDefault(x => x.Guid == tableGuid);
+                var table = dataBase.Tables.FirstOrDefault(x => x.Name == tableName);
                 if (table is not null)
                 {
-                    var oldAttributeProperty = table.AttributeProperties.FirstOrDefault(x => x.Guid == attributeProperty.Guid);
+                    var oldAttributeProperty = table.AttributeProperties.FirstOrDefault(x => x.Name == attributeProperty.Name);
                     if (oldAttributeProperty is not null)
                     {
-                        oldAttributeProperty.Guid = attributeProperty.Guid;
-                        oldAttributeProperty = attributeProperty;
+                        oldAttributeProperty.Name = attributeProperty.Name;
+                        oldAttributeProperty.AttributeType = attributeProperty.AttributeType;
                     }
                     else
                     {
@@ -215,23 +215,9 @@ namespace TableDataBase.Services
             }
         }
 
-        public void AddRelation(AttributeProperty attributeProperty, Guid tableGuid, Guid targetTableGuid, Guid dbGuid)
+        public string? GetDbFileNameByName(string name)
         {
-            var dataBase = dataBasesContext.FirstOrDefault(x => x.Guid == dbGuid);
-            if (dataBase is not null)
-            {
-                var table = dataBase.Tables.FirstOrDefault(x => x.Guid == tableGuid);
-                var targetTable = dataBase.Tables.FirstOrDefault(x => x.Guid == targetTableGuid);
-                if (table is not null && targetTable is not null)
-                {
-                    table.AttributeProperties.Add(attributeProperty);
-                }
-            }
-        }
-
-        public string? GetDbFileNameByGuid(Guid guid)
-        {
-            var dataBase = dataBasesContext.FirstOrDefault(x => x.Guid == guid);
+            var dataBase = dataBasesContext.FirstOrDefault(x => x.Name == name);
             if (dataBase is not null)
             {
                 return GetDbFileName(dataBase);
@@ -252,7 +238,7 @@ namespace TableDataBase.Services
 
         private string GetDbFileName(DataBase dataBase)
         {
-            return $"{dataBase.Name}-{dataBase.Guid}.json";
+            return $"{dataBase.Name}.json";
         }
     }
 }

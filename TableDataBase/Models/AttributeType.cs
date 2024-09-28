@@ -7,7 +7,8 @@ namespace TableDataBase.Models
 		Real = 2,
 		Char = 3,
 		String = 4,
-		Relation = 0
-	}
+		Html = 5,
+        StringInvl = 6
+    }
 }
 

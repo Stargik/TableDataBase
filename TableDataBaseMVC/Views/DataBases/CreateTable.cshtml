@@ -8,14 +8,14 @@
 <hr />
 <div class="btn-group btn-group-sm" role="group">
     <input type="submit" form="createForm" value="Create" class="btn btn-outline-dark" />
-    <a class="btn btn-outline-dark" asp-action="Tables" asp-route-guid="@ViewData["DbGuid"]">Back</a>
+    <a class="btn btn-outline-dark" asp-action="Tables" asp-route-name="@Model.DbName">Back</a>
 </div>
 <hr />
 <div class="row">
     <div class="col-md-4">
         <form asp-action="CreateTable" id="createForm">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            <input type="hidden" asp-for="DbGuid" value="@ViewData["DbGuid"]"/>
+            <input type="hidden" asp-for="DbName" value="@Model.DbName"/>
             <div class="form-group">
                 <label asp-for="Name" class="control-label"></label>
                 <input asp-for="Name" class="form-control" />

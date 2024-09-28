@@ -12,12 +12,14 @@
     <None Remove="Services\" />
     <None Remove="Protos\databaseservice.proto" />
     <None Remove="Protos\" />
+    <None Remove="Validators\" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Models\" />
     <Folder Include="Interfaces\" />
     <Folder Include="Services\" />
     <Folder Include="Protos\" />
+    <Folder Include="Validators\" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />

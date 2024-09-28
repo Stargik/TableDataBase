@@ -6,7 +6,7 @@
 
 <h1>@ViewData["Title"]: Tables</h1>
 <div class="btn-group btn-group-sm" role="group">
-    <a class="btn btn-outline-dark" asp-action="CreateTable" asp-route-dbguid="@Model.Guid">Add table</a>
+    <a class="btn btn-outline-dark" asp-action="CreateTable" asp-route-dbname="@Model.Name">Add table</a>
     <a class="btn btn-outline-dark" asp-action="Index">Back</a>
 </div>
 <table class="table">
@@ -26,9 +26,9 @@
                     @Html.DisplayFor(modelItem => item.Name)
                 </td>
                 <td class="text-end">
-                    <a asp-action="EditTable" asp-route-guid="@item.Guid" asp-route-dbguid="@Model.Guid">Table design</a> |
-                    <a asp-action="Fields" asp-route-tableGuid="@item.Guid" asp-route-dbguid="@Model.Guid">Fields</a> |
-                    <a asp-action="DeleteTable" asp-route-guid="@item.Guid" asp-route-dbguid="@Model.Guid">Delete</a>
+                    <a asp-action="EditTable" asp-route-name="@item.Name" asp-route-dbname="@Model.Name">Table design</a> |
+                    <a asp-action="Fields" asp-route-tablename="@item.Name" asp-route-dbname="@Model.Name">Fields</a> |
+                    <a asp-action="DeleteTable" asp-route-name="@item.Name" asp-route-dbname="@Model.Name">Delete</a>
                 </td>
             </tr>
         }

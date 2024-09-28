@@ -13,7 +13,7 @@ using TableDataBase.Services;
 namespace TableDataBaseWebApi.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/")]
     public class DataBasesController : Controller
     {
         private static IDataBaseSchemaService? dataBaseSchemaService;
@@ -25,19 +25,20 @@ namespace TableDataBaseWebApi.Controllers
             isLocal = configuration.GetValue<bool>("IsLocal");
         }
 
-        // POST api/DataBases/SetConnection
-        [HttpPost("SetConnection")]
-        public void SetConnection(string connection)
+        // POST api/setconnection
+        [HttpPost("setconnection")]
+        public ActionResult SetConnection(string connection)
         {
             connectionString = connection;
             if (!String.IsNullOrEmpty(connectionString))
             {
                 dataBaseSchemaService = new DataBaseSchemaClientService(connectionString);
             }
+            return Ok();
         }
 
-        // GET: api/DataBases
-        [HttpGet]
+        // GET: api/databases
+        [HttpGet("databases")]
         public ActionResult<IEnumerable<DataBase>> Get()
         {
             if (String.IsNullOrEmpty(connectionString))
@@ -45,169 +46,175 @@ namespace TableDataBaseWebApi.Controllers
                 return BadRequest();
             }
             var dbs = dataBaseSchemaService.GetAllDbObjects();
-            return dbs;
+            return Ok(dbs);
         }
 
-        // GET api/DataBases/5
-        [HttpGet("{guid}")]
-        public ActionResult<DataBase> Get(Guid guid)
+        // GET api/databases/5
+        [HttpGet("databases/{name}")]
+        public ActionResult<DataBase> Get(string name)
         {
-            var db = dataBaseSchemaService.GetDbObjectByGuid(guid);
-            return db;
+            var db = dataBaseSchemaService.GetDbObjectByName(name);
+            return Ok(db);
         }
 
-        // POST api/DataBases
-        [HttpPost]
-        public void Post([FromBody] DataBase dataBase)
+        // POST api/dataBases
+        [HttpPost("databases")]
+        public ActionResult Post([FromBody] DataBase dataBase)
         {
+            if (dataBaseSchemaService.GetAllDbObjects().Select(x => x.Name).Contains(dataBase.Name))
+            {
+                return BadRequest();
+            }
             dataBaseSchemaService.AddJsonDbObjectSchema(dataBase);
             dataBaseSchemaService.SaveChanges();
+            return Ok();
         }
 
-        // DELETE api/DataBases/5
-        [HttpDelete("{guid}")]
-        public void Delete(Guid guid)
+        // DELETE api/dataBases/5
+        [HttpDelete("databases/{name}")]
+        public ActionResult Delete(string name)
         {
-            dataBaseSchemaService.RemoveJsonDbObjectSchemaByGuid(guid);
+            dataBaseSchemaService.RemoveJsonDbObjectSchemaByName(name);
             dataBaseSchemaService.SaveChanges();
+            return Ok();
         }
 
-        // PUT api/DataBases/
-        [HttpPut("{guid}")]
-        public void Put([FromBody] DataBase dataBase)
+        // GET api/databases/5/tables
+        [HttpGet("databases/{dbname}/tables")]
+        public ActionResult<IEnumerable<Table>> GetTables(string dbname)
         {
-            dataBaseSchemaService.UpdateJsonDbObjectSchema(dataBase);
+            var tables = dataBaseSchemaService.GetAllTablesByDbName(dbname);
+            return Ok(tables);
+        }
+
+        // GET api/databases/5/tables/5
+        [HttpGet("databases/{dbname}/tables/{name}")]
+        public ActionResult<Table> GetTables(string name, string dbname)
+        {
+            var table = dataBaseSchemaService.GetTableByName(name, dbname);
+            return Ok(table);
+        }
+
+        // POST api/databases/5/tables
+        [HttpPost("databases/{dbname}/tables")]
+        public ActionResult CreateTable([FromBody]Table table, string dbname)
+        {
+            if (dataBaseSchemaService.GetAllTablesByDbName(dbname).Select(x => x.Name).Contains(table.Name))
+            {
+                return BadRequest();
+            }
+            dataBaseSchemaService.AddTable(table, dbname);
             dataBaseSchemaService.SaveChanges();
-        }
-        
-        // GET api/DataBases/Tables
-        [HttpGet("Tables")]
-        public ActionResult<IEnumerable<Table>> GetTables(Guid dbguid)
-        {
-            var tables = dataBaseSchemaService.GetAllTablesByDbGuid(dbguid);
-            return tables;
+            return Ok();
         }
 
-        // POST api/DataBases
-        [HttpPost("Tables")]
-        public void CreateTable([FromBody]Table table, Guid dbguid)
+        // DELETE api/databases/5/tables/5
+        [HttpDelete("databases/{dbname}/tables/{name}")]
+        public ActionResult DeleteTable(string name, string dbname)
         {
-            dataBaseSchemaService.AddTable(table, dbguid);
+            dataBaseSchemaService.RemoveTableByName(name, dbname);
             dataBaseSchemaService.SaveChanges();
+            return Ok();
         }
 
-        // DELETE api/DataBases
-        [HttpDelete("Tables")]
-        public void DeleteTable(Guid guid, Guid dbguid)
+        // GET api/databases/5/tables/5/attributeproperties
+        [HttpGet("databases/{dbname}/tables/{tablename}/attributeproperties")]
+        public ActionResult<IEnumerable<AttributeProperty>> GetAttributeProperties(string tablename, string dbname)
         {
-            dataBaseSchemaService.RemoveTableByGuid(guid, dbguid);
+            var properties = dataBaseSchemaService.GetAllAttributePropertiesByDbTableName(tablename, dbname);
+            return Ok(properties);
+        }
+
+        // GET api/databases/5/tables/5/attributeproperties/5
+        [HttpGet("databases/{dbname}/tables/{tablename}/attributeproperties/{name}")]
+        public ActionResult<AttributeProperty> GetAttributeProperties(string name, string tablename, string dbname)
+        {
+            var propertiy = dataBaseSchemaService.GetAttributePropertyByName(name, tablename, dbname);
+            return Ok(propertiy);
+        }
+
+        // POST api/databases/5/tables/5/attributeproperties
+        [HttpPost("databases/{dbname}/tables/{tablename}/attributeproperties")]
+        public ActionResult CreateAttributeProperty([FromBody] AttributeProperty attributeProperty, string tablename, string dbname)
+        {
+            if (dataBaseSchemaService.GetAllAttributePropertiesByDbTableName(tablename, dbname).Select(x => x.Name).Contains(attributeProperty.Name))
+            {
+                return BadRequest();
+            }
+            dataBaseSchemaService.AddAttributeProperty(attributeProperty, tablename, dbname);
             dataBaseSchemaService.SaveChanges();
+            return Ok();
         }
 
-        // PUT api/DataBases/Tables
-        [HttpPut("Tables")]
-        public void PutTable([FromBody] Table table, Guid dbguid)
+        // DELETE api/databases/5/tables/5/attributeproperties/5
+        [HttpDelete("databases/{dbname}/tables/{tablename}/attributeproperties/{name}")]
+        public ActionResult DeleteAttributeProperty(string name, string tablename, string dbname)
         {
-            dataBaseSchemaService.UpdateTable(table, dbguid);
-        }
-        
-        // GET api/DataBases/AttributeProperties
-        [HttpGet("AttributeProperties")]
-        public ActionResult<IEnumerable<AttributeProperty>> GetAttributeProperties(Guid tableguid, Guid dbguid)
-        {
-            var properties = dataBaseSchemaService.GetAllAttributePropertiesByDbTableGuid(tableguid, dbguid);
-            return properties;
-        }
-
-        // POST api/DataBases/AttributeProperties
-        [HttpPost("AttributeProperties")]
-        public void CreateAttributeProperty([FromBody] AttributeProperty attributeProperty, Guid tableguid, Guid dbguid)
-        {
-            dataBaseSchemaService.AddAttributeProperty(attributeProperty, tableguid, dbguid);
+            dataBaseSchemaService.RemoveAttributePropertyByName(name, tablename, dbname);
             dataBaseSchemaService.SaveChanges();
+            return Ok();
         }
 
-        // DELETE api/DataBases/AttributeProperties
-        [HttpDelete("AttributeProperties")]
-        public void DeleteAttributeProperty(Guid guid, Guid tableguid, Guid dbguid)
+        // GET api/databases/5/tables/5/fields
+        [HttpGet("databases/{dbname}/tables/{tablename}/fields")]
+        public ActionResult<IEnumerable<TableField>> GetFields(string tablename, string dbname)
         {
-            dataBaseSchemaService.RemoveAttributePropertyByGuid(guid, tableguid, dbguid);
-            dataBaseSchemaService.SaveChanges();
-        }
-
-        // PUT api/DataBases/AttributeProperties
-        [HttpPut("AttributeProperties")]
-        public void PutAttributeProperty([FromBody] AttributeProperty attributeProperty, Guid tableguid, Guid dbguid)
-        {
-            dataBaseSchemaService.UpdateAttributeProperty(attributeProperty, tableguid, dbguid);
-            dataBaseSchemaService.SaveChanges();
-        }
-        
-        // POST api/DataBases/AttributeProperties
-        [HttpPost("Relations")]
-        public void CreateRelation([FromBody] AttributeProperty attributeProperty, Guid tableguid, Guid targettableguid, Guid dbguid)
-        {
-            dataBaseSchemaService.AddRelation(attributeProperty, tableguid, targettableguid, dbguid);
-            dataBaseSchemaService.SaveChanges();
-        }
-
-        // GET api/DataBases/Fields
-        [HttpGet("Fields")]
-        public ActionResult<IEnumerable<TableField>> GetFields(Guid tableguid, Guid dbguid)
-        {
-            var dataBaseService = GetDataBaseService(dbguid);
-            var fields = dataBaseService.GetAllFieldsByTableGuid(tableguid);
+            var dataBaseService = GetDataBaseService(dbname);
+            var fields = dataBaseService.GetAllFieldsByTableName(tablename);
             return fields;
         }
-        
-        // GET api/DataBases/Fields
-        [HttpGet("Fields/{guid}")]
-        public ActionResult<TableField> GetField(Guid guid, Guid dbguid)
+
+        // GET api/databases/5/tables/fields/5
+        [HttpGet("databases/{dbname}/tables/fields/{guid}")]
+        public ActionResult<TableField> GetField(Guid guid, string dbname)
         {
-            var dataBaseService = GetDataBaseService(dbguid);
+            var dataBaseService = GetDataBaseService(dbname);
             var field = dataBaseService.GetFieldByGuid(guid);
-            return field;
+            return Ok(field);
         }
-        
-        // POST api/DataBases/Fields
-        [HttpPost("Fields")]
-        public void CreateField([FromBody] TableField tableField, Guid dbguid)
+
+        // POST api/databases/5/tables/fields
+        [HttpPost("databases/{dbname}/tables/fields")]
+        public ActionResult CreateField([FromBody] TableField tableField, string dbname)
         {
-            var dataBaseService = GetDataBaseService(dbguid);
+            var dataBaseService = GetDataBaseService(dbname);
             dataBaseService.AddField(tableField);
             dataBaseService.SaveChanges();
+            return Ok();
         }
 
-        // PUT api/DataBases/Fields
-        [HttpPut("Fields")]
-        public void PutField([FromBody] TableField tableField, Guid dbguid)
+        // PUT api/databases/5/tables/fields
+        [HttpPut("databases/{dbname}/tables/fields")]
+        public ActionResult PutField([FromBody] TableField tableField, string dbname)
         {
-            var dataBaseService = GetDataBaseService(dbguid);
+            var dataBaseService = GetDataBaseService(dbname);
             dataBaseService.UpdateField(tableField);
             dataBaseService.SaveChanges();
+            return Ok();
         }
 
-        // DELETE api/DataBases/Fields
-        [HttpDelete("Fields")]
-        public void DeleteField(Guid guid, Guid dbguid)
+        // DELETE api/databases/5/tables/fields/5
+        [HttpDelete("databases/{dbname}/tables/fields/{guid}")]
+        public ActionResult DeleteField(Guid guid, string dbname)
         {
-            var dataBaseService = GetDataBaseService(dbguid);
+            var dataBaseService = GetDataBaseService(dbname);
             dataBaseService.RemoveFieldByGuid(guid);
             dataBaseService.SaveChanges();
+            return Ok();
         }
         
-        private IDataBaseService GetDataBaseService(Guid dbGuid)
+        private IDataBaseService GetDataBaseService(string dbName)
         {
             if (isLocal)
             {
-                var fileName = dataBaseSchemaService.GetDbFileNameByGuid(dbGuid);
+                var fileName = dataBaseSchemaService.GetDbFileNameByName(dbName);
                 var filePath = dataBaseSchemaService.GetDbFilePath();
                 var dataBaseService = new DataBaseService(filePath, fileName);
                 return dataBaseService;
             }
             else
             {
-                var dataBaseService = new DataBaseClientService(connectionString, dbGuid.ToString());
+                var dataBaseService = new DataBaseClientService(connectionString, dbName);
                 return dataBaseService;
             }
         }

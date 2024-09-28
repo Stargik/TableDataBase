@@ -28,9 +28,9 @@ namespace TableDataBase.Services
             dataBaseContext.Add(tableField);
         }
 
-        public List<TableField>? GetAllFieldsByTableGuid(Guid tableGuid)
+        public List<TableField>? GetAllFieldsByTableName(string tableName)
         {
-            var fields = dataBaseContext.Where(x => x.TableGuid == tableGuid);
+            var fields = dataBaseContext.Where(x => x.TableName == tableName);
             return fields.ToList();
         }
 
@@ -62,12 +62,12 @@ namespace TableDataBase.Services
             }
         }
 
-        public void UpdateValue(dynamic Value, Guid attributePropertyGuid, Guid fieldGuid)
+        public void UpdateValue(dynamic Value, string attributePropertyName, Guid fieldGuid)
         {
             var field = dataBaseContext.FirstOrDefault(x => x.Guid == fieldGuid);
-            if (field is not null && field.Values.ContainsKey(attributePropertyGuid))
+            if (field is not null && field.Values.ContainsKey(attributePropertyName))
             {
-                field.Values[attributePropertyGuid] = Value;
+                field.Values[attributePropertyName] = Value;
             }
         }
 

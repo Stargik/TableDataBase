@@ -7,9 +7,8 @@
 <h1>Table designer: @ViewData["Title"]</h1>
 <hr />
 <div class="btn-group btn-group-sm" role="group">
-    <a class="btn btn-outline-dark" asp-action="CreateProperty" asp-route-tableguid="@Model.Guid" asp-route-dbguid="@ViewData["DbGuid"]">Add column</a>
-    <a class="btn btn-outline-dark" asp-action="CreateRelation" asp-route-tableguid="@Model.Guid" asp-route-dbguid="@ViewData["DbGuid"]">Add relation</a>
-    <a class="btn btn-outline-dark" asp-action="Tables" asp-route-guid="@ViewData["DbGuid"]">Back</a>
+    <a class="btn btn-outline-dark" asp-action="CreateProperty" asp-route-tableName="@Model.Name" asp-route-dbName="@ViewData["DbName"]">Add column</a>
+    <a class="btn btn-outline-dark" asp-action="Tables" asp-route-name="@ViewData["DbName"]">Back</a>
 </div>
 <table class="table">
     <thead>
@@ -34,8 +33,7 @@
                     @Html.DisplayFor(modelItem => item.AttributeType)
                 </td>
                 <td class="text-end">
-                    <a asp-action="EditProperty" asp-route-guid="@item.Guid" asp-route-tableguid="@Model.Guid" asp-route-dbguid="@ViewData["DbGuid"]">Edit</a> |
-                    <a asp-action="DeleteProperty" asp-route-guid="@item.Guid" asp-route-tableguid="@Model.Guid" asp-route-dbguid="@ViewData["DbGuid"]">Delete</a>
+                    <a asp-action="DeleteProperty" asp-route-name="@item.Name" asp-route-tablename="@Model.Name" asp-route-dbname="@ViewData["DbName"]">Delete</a>
                 </td>
             </tr>
         }
