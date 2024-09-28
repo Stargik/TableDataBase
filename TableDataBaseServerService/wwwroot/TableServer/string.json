@@ -1,0 +1,12 @@
+[
+  {
+    "Guid": "6cb16b64-6de7-49b4-9881-d8cadd78e860",
+    "TableName": "string",
+    "Values": {
+      "string": "4",
+      "string2": "6",
+      "htmlfile": "<!DOCTYPE html>\r\n        <html>\r\n        <head><title>Test Page</title></head>\r\n        <body><h1>Hello, this is a test page!</h1></body>\r\n        </html>",
+      "ggg": "dddd"
+    }
+  }
+]

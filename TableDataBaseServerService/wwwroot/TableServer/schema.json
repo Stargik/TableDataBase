@@ -1,0 +1,46 @@
+[
+  {
+    "Name": "string",
+    "Tables": [
+      {
+        "Name": "string",
+        "AttributeProperties": [
+          {
+            "Name": "string",
+            "AttributeType": 1
+          },
+          {
+            "Name": "string2",
+            "AttributeType": 1
+          },
+          {
+            "Name": "htmlfile",
+            "AttributeType": 5
+          },
+          {
+            "Name": "ggg",
+            "AttributeType": 4
+          }
+        ]
+      },
+      {
+        "Name": "string2",
+        "AttributeProperties": []
+      }
+    ]
+  },
+  {
+    "Name": "string3",
+    "Tables": [
+      {
+        "Name": "string",
+        "AttributeProperties": [
+          {
+            "Name": "string",
+            "AttributeType": 1
+          }
+        ]
+      }
+    ]
+  }
+]

@@ -19,24 +19,20 @@ namespace TableDataBase.Services
         {
             var dataBaseRequest = new AddJsonDbObjectSchemaRequest
             {
-                Guid = dataBase.Guid.ToString(),
                 Name = dataBase.Name,
             };
 
             var tables = dataBase.Tables.Select(t => new TableReply
             {
-                Guid = t.Guid.ToString(),
                 Name = t.Name
             }).ToList();
 
             foreach (var table in tables)
             {
-                var props = dataBase.Tables.FirstOrDefault(x => x.Guid == Guid.Parse(table.Guid)).AttributeProperties.Select(p => new AttributePropertyReply
+                var props = dataBase.Tables.FirstOrDefault(x => x.Name == table.Name).AttributeProperties.Select(p => new AttributePropertyReply
                 {
-                    Guid = p.Guid.ToString(),
                     Name = p.Name,
-                    AttributeType = (int)p.AttributeType,
-                    RelationTableGuid = p.RelationTableGuid.ToString()
+                    AttributeType = (int)p.AttributeType
                 }).ToList();
                 table.AttributeProperties.AddRange(props);
             }
@@ -46,30 +42,26 @@ namespace TableDataBase.Services
             client.AddJsonDbObjectSchema(dataBaseRequest);
         }
 
-        public void RemoveJsonDbObjectSchemaByGuid(Guid guid)
+        public void RemoveJsonDbObjectSchemaByName(string name)
         {
-            var request = new RemoveJsonDbObjectSchemaByGuidRequest { Guid = guid.ToString() };
-            client.RemoveJsonDbObjectSchemaByGuid(request);
+            var request = new RemoveJsonDbObjectSchemaByNameRequest { Name = name };
+            client.RemoveJsonDbObjectSchemaByName(request);
         }
 
-        public DataBase? GetDbObjectByGuid(Guid guid)
+        public DataBase? GetDbObjectByName(string name)
         {
-            var request = new GetDbObjectByGuidRequest { Guid = guid.ToString() };
-            var reply = client.GetDbObjectByGuid(request);
+            var request = new GetDbObjectByNameRequest { Name = name };
+            var reply = client.GetDbObjectByName(request);
             var dataBase = new DataBase
             {
-                Guid = Guid.Parse(reply.Guid),
                 Name = reply.Name,
                 Tables = reply.Tables.Select(t => new Table
                 {
-                    Guid = Guid.Parse(t.Guid),
                     Name = t.Name,
                     AttributeProperties = t.AttributeProperties.Select(p => new AttributeProperty
                     {
-                        Guid = Guid.Parse(p.Guid),
                         AttributeType = (AttributeType)p.AttributeType,
-                        Name = p.Name,
-                        RelationTableGuid = !String.IsNullOrEmpty(p.RelationTableGuid) ? Guid.Parse(p.RelationTableGuid) : null
+                        Name = p.Name
                     }).ToList()
                 }).ToList()
             };
@@ -81,18 +73,14 @@ namespace TableDataBase.Services
             var reply = client.GetAllDbObjects(new Google.Protobuf.WellKnownTypes.Empty());
             var dataBases = reply.DataBases.Select(x => new DataBase
             {
-                Guid = Guid.Parse(x.Guid),
                 Name = x.Name,
                 Tables = x.Tables.Select(t => new Table
                 {
-                    Guid = Guid.Parse(t.Guid),
                     Name = t.Name,
                     AttributeProperties = t.AttributeProperties.Select(p => new AttributeProperty
                     {
-                        Guid = Guid.Parse(p.Guid),
                         AttributeType = (AttributeType)p.AttributeType,
-                        Name = p.Name,
-                        RelationTableGuid = !String.IsNullOrEmpty(p.RelationTableGuid) ? Guid.Parse(p.RelationTableGuid) : null
+                        Name = p.Name
                     }).ToList()
                 }).ToList()
             }
@@ -104,24 +92,20 @@ namespace TableDataBase.Services
         {
             var dataBaseRequest = new UpdateJsonDbObjectSchemaRequest
             {
-                Guid = dataBase.Guid.ToString(),
-                Name = dataBase.Name,
+                Name = dataBase.Name
             };
 
             var tables = dataBase.Tables.Select(t => new TableReply
             {
-                Guid = t.Guid.ToString(),
                 Name = t.Name
             }).ToList();
 
             foreach (var table in tables)
             {
-                var props = dataBase.Tables.FirstOrDefault(x => x.Guid == Guid.Parse(table.Guid)).AttributeProperties.Select(p => new AttributePropertyReply
+                var props = dataBase.Tables.FirstOrDefault(x => x.Name == table.Name).AttributeProperties.Select(p => new AttributePropertyReply
                 {
-                    Guid = p.Guid.ToString(),
                     Name = p.Name,
-                    AttributeType = (int)p.AttributeType,
-                    RelationTableGuid = p.RelationTableGuid.ToString()
+                    AttributeType = (int)p.AttributeType
                 }).ToList();
                 table.AttributeProperties.AddRange(props);
             }
@@ -131,166 +115,133 @@ namespace TableDataBase.Services
             client.UpdateJsonDbObjectSchema(dataBaseRequest);
         }
 
-        public void AddTable(Table table, Guid dbGuid)
+        public void AddTable(Table table, string dbName)
         {
-            var tableReply = new TableReply { Guid = table.Guid.ToString(), Name = table.Name };
+            var tableReply = new TableReply { Name = table.Name };
             var props = table.AttributeProperties.Select(p => new AttributePropertyReply
             {
-                Guid = p.Guid.ToString(),
                 Name = p.Name,
-                AttributeType = (int)p.AttributeType,
-                RelationTableGuid = p.RelationTableGuid.ToString()
+                AttributeType = (int)p.AttributeType
             }).ToList();
             tableReply.AttributeProperties.AddRange(props);
 
-            var request = new AddTableRequest { DbGuid = dbGuid.ToString(), Table = tableReply };
+            var request = new AddTableRequest { DbName = dbName, Table = tableReply };
 
             client.AddTable(request);
         }
 
-        public void RemoveTableByGuid(Guid guid, Guid dbGuid)
+        public void RemoveTableByName(string name, string dbName)
         {
-            var request = new RemoveTableByGuidRequest { Guid = guid.ToString(), DbGuid = dbGuid.ToString() };
-            client.RemoveTableByGuid(request);
+            var request = new RemoveTableByNameRequest { Name = name, DbName = dbName };
+            client.RemoveTableByName(request);
         }
 
-        public Table? GetTableByGuid(Guid guid, Guid dbGuid)
+        public Table? GetTableByName(string name, string dbName)
         {
-            var request = new GetTableByGuidRequest { Guid = guid.ToString(), DbGuid = dbGuid.ToString() };
-            var reply = client.GetTableByGuid(request);
+            var request = new GetTableByNameRequest { Name = name, DbName = dbName };
+            var reply = client.GetTableByName(request);
             var table = new Table
             {
-                Guid = Guid.Parse(reply.Guid),
                 Name = reply.Name,
                 AttributeProperties = reply.AttributeProperties.Select(p => new AttributeProperty
                 {
-                    Guid = Guid.Parse(p.Guid),
                     AttributeType = (AttributeType)p.AttributeType,
-                    Name = p.Name,
-                    RelationTableGuid = !String.IsNullOrEmpty(p.RelationTableGuid) ? Guid.Parse(p.RelationTableGuid) : null
+                    Name = p.Name
                 }).ToList()
             };
             return table;
         }
 
-        public List<Table>? GetAllTablesByDbGuid(Guid dbGuid)
+        public List<Table>? GetAllTablesByDbName(string dbName)
         {
-            var request = new GetAllTablesByDbGuidRequest { DbGuid = dbGuid.ToString() };
-            var reply = client.GetAllTablesByDbGuid(request);
+            var request = new GetAllTablesByDbNameRequest { DbName = dbName };
+            var reply = client.GetAllTablesByDbName(request);
             var tables = reply.Tables.Select(t => new Table
             {
-                Guid = Guid.Parse(t.Guid),
                 Name = t.Name,
                 AttributeProperties = t.AttributeProperties.Select(p => new AttributeProperty
                 {
-                    Guid = Guid.Parse(p.Guid),
                     AttributeType = (AttributeType)p.AttributeType,
-                    Name = p.Name,
-                    RelationTableGuid = !String.IsNullOrEmpty(p.RelationTableGuid) ? Guid.Parse(p.RelationTableGuid) : null
+                    Name = p.Name
                 }).ToList()
             }).ToList();
             return tables;
         }
 
-        public void UpdateTable(Table table, Guid dbGuid)
+        public void UpdateTable(Table table, string dbName)
         {
-            var tableReply = new TableReply { Guid = table.Guid.ToString(), Name = table.Name };
+            var tableReply = new TableReply { Name = table.Name };
             var props = table.AttributeProperties.Select(p => new AttributePropertyReply
             {
-                Guid = p.Guid.ToString(),
                 Name = p.Name,
-                AttributeType = (int)p.AttributeType,
-                RelationTableGuid = p.RelationTableGuid.ToString()
+                AttributeType = (int)p.AttributeType
             }).ToList();
             tableReply.AttributeProperties.AddRange(props);
 
-            var request = new UpdateTableRequest { DbGuid = dbGuid.ToString(), Table = tableReply };
+            var request = new UpdateTableRequest { Table = tableReply };
 
             client.UpdateTable(request);
         }
 
-        public void AddAttributeProperty(AttributeProperty attributeProperty, Guid tableGuid, Guid dbGuid)
+        public void AddAttributeProperty(AttributeProperty attributeProperty, string tableName, string dbName)
         {
             var attributePropertyReply = new AttributePropertyReply {
-                Guid = attributeProperty.Guid.ToString(),
                 Name = attributeProperty.Name,
-                AttributeType = (int)attributeProperty.AttributeType,
-                RelationTableGuid = attributeProperty.RelationTableGuid.ToString()
+                AttributeType = (int)attributeProperty.AttributeType
             };
 
-            var request = new AddAttributePropertyRequest { DbGuid = dbGuid.ToString(), TableGuid = tableGuid.ToString(), AttributePropertyReply = attributePropertyReply };
+            var request = new AddAttributePropertyRequest { DbName = dbName, TableName = tableName, AttributePropertyReply = attributePropertyReply };
 
             client.AddAttributeProperty(request);
         }
 
-        public void RemoveAttributePropertyByGuid(Guid guid, Guid tableGuid, Guid dbGuid)
+        public void RemoveAttributePropertyByName(string name, string tableName, string dbName)
         {
-            var request = new RemoveAttributePropertyByGuidRequest { Guid = guid.ToString(), TableGuid = tableGuid.ToString(), DbGuid = dbGuid.ToString() };
-            client.RemoveAttributePropertyByGuid(request);
+            var request = new RemoveAttributePropertyByNameRequest { Name = name, TableName = tableName, DbName = dbName };
+            client.RemoveAttributePropertyByName(request);
         }
 
-        public AttributeProperty? GetAttributePropertyByGuid(Guid guid, Guid tableGuid, Guid dbGuid)
+        public AttributeProperty? GetAttributePropertyByName(string name, string tableName, string dbName)
         {
-            var request = new GetAttributePropertyByGuidRequest { Guid = guid.ToString(), TableGuid = tableGuid.ToString(), DbGuid = dbGuid.ToString() };
-            var reply = client.GetAttributePropertyByGuid(request);
+            var request = new GetAttributePropertyByNameRequest { Name = name, TableName = tableName, DbName = dbName };
+            var reply = client.GetAttributePropertyByName(request);
             var attributeProperty = new AttributeProperty
             {
-                Guid = Guid.Parse(reply.Guid),
                 AttributeType = (AttributeType)reply.AttributeType,
-                Name = reply.Name,
-                RelationTableGuid = !String.IsNullOrEmpty(reply.RelationTableGuid) ? Guid.Parse(reply.RelationTableGuid) : null
+                Name = reply.Name
             };
             return attributeProperty;
         }
 
-        public List<AttributeProperty>? GetAllAttributePropertiesByDbTableGuid(Guid tableGuid, Guid dbGuid)
+        public List<AttributeProperty>? GetAllAttributePropertiesByDbTableName(string tableName, string dbName)
         {
-            var request = new GetAllAttributePropertiesByDbTableGuidRequest { TableGuid = tableGuid.ToString(), DbGuid = dbGuid.ToString() };
-            var reply = client.GetAllAttributePropertiesByDbTableGuid(request);
+            var request = new GetAllAttributePropertiesByDbTableNameRequest { TableName = tableName, DbName = dbName };
+            var reply = client.GetAllAttributePropertiesByDbTableName(request);
             var attributeProperties = reply.AttributeProperties.Select(x => new AttributeProperty
             {
-                Guid = Guid.Parse(x.Guid),
                 AttributeType = (AttributeType)x.AttributeType,
-                Name = x.Name,
-                RelationTableGuid = !String.IsNullOrEmpty(x.RelationTableGuid) ? Guid.Parse(x.RelationTableGuid) : null
+                Name = x.Name
             }).ToList();
             return attributeProperties;
         }
 
-        public void UpdateAttributeProperty(AttributeProperty attributeProperty, Guid tableGuid, Guid dbGuid)
+        public void UpdateAttributeProperty(AttributeProperty attributeProperty, string tableName, string dbName)
         {
             var attributePropertyReply = new AttributePropertyReply
             {
-                Guid = attributeProperty.Guid.ToString(),
                 Name = attributeProperty.Name,
-                AttributeType = (int)attributeProperty.AttributeType,
-                RelationTableGuid = attributeProperty.RelationTableGuid.ToString()
+                AttributeType = (int)attributeProperty.AttributeType
             };
 
-            var request = new UpdateAttributePropertyRequest { DbGuid = dbGuid.ToString(), TableGuid = tableGuid.ToString(), AttributePropertyReply = attributePropertyReply };
+            var request = new UpdateAttributePropertyRequest { DbName = dbName, TableName = tableName, AttributePropertyReply = attributePropertyReply };
 
             client.UpdateAttributeProperty(request);
         }
 
-        public void AddRelation(AttributeProperty attributeProperty, Guid tableGuid, Guid targetTableGuid, Guid dbGuid)
+        public string? GetDbFileNameByName(string name)
         {
-            var attributePropertyReply = new AttributePropertyReply
-            {
-                Guid = attributeProperty.Guid.ToString(),
-                Name = attributeProperty.Name,
-                AttributeType = (int)attributeProperty.AttributeType,
-                RelationTableGuid = attributeProperty.RelationTableGuid.ToString()
-            };
-
-            var request = new AddRelationRequest { DbGuid = dbGuid.ToString(), TableGuid = tableGuid.ToString(), TargetTableGuid = targetTableGuid.ToString(), AttributePropertyReply = attributePropertyReply };
-
-            client.AddRelation(request);
-        }
-
-        public string? GetDbFileNameByGuid(Guid guid)
-        {
-            var request = new GetDbFileNameByGuidRequest { Guid = guid.ToString() };
-            var reply = client.GetDbFileNameByGuid(request);
+            var request = new GetDbFileNameByNameRequest { Name = name };
+            var reply = client.GetDbFileNameByName(request);
             var fileName = reply.StringValue;
             return fileName;
         }

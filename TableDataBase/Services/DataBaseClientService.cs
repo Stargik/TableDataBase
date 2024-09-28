@@ -8,13 +8,13 @@ namespace TableDataBase.Services
 	public class DataBaseClientService : IDataBaseService
 	{
         private readonly TableDataBaseServise.TableDataBaseServiseClient client;
-        private readonly string dbGuid;
+        private readonly string dbName;
 
-        public DataBaseClientService(string connectionString, string dbGuid)
+        public DataBaseClientService(string connectionString, string dbName)
 		{
             var channel = GrpcChannel.ForAddress(connectionString);
             client = new TableDataBaseServise.TableDataBaseServiseClient(channel);
-            this.dbGuid = dbGuid;
+            this.dbName = dbName;
         }
 
         public void AddField(TableField tableField)
@@ -22,58 +22,58 @@ namespace TableDataBase.Services
             var addFieldRequest = new AddFieldRequest
             {
                 Guid = tableField.Guid.ToString(),
-                TableGuid = tableField.TableGuid.ToString(),
-                DbGuid = dbGuid
+                TableName = tableField.TableName,
+                DbName = dbName
             };
-            var values = tableField.Values.Select(x => new ValueReply { Guid = x.Key.ToString(), Value = x.Value.ToString() });
+            var values = tableField.Values.Select(x => new ValueReply { Name = x.Key, Value = x.Value.ToString() });
             addFieldRequest.Values.Add(values);
             client.AddField(addFieldRequest);
         }
 
         public void RemoveFieldByGuid(Guid guid)
         {
-            var request = new RemoveFieldByGuidRequest { Guid = guid.ToString(), DbGuid = dbGuid };
+            var request = new RemoveFieldByGuidRequest { Guid = guid.ToString(), DbName = dbName };
             client.RemoveFieldByGuid(request);
         }
 
         public TableField? GetFieldByGuid(Guid guid)
         {
-            var request = new GetFieldByGuidRequest { Guid = guid.ToString(), DbGuid = dbGuid };
+            var request = new GetFieldByGuidRequest { Guid = guid.ToString(), DbName = dbName };
             var reply = client.GetFieldByGuid(request);
-            var dictValues = new Dictionary<Guid, dynamic>();
+            var dictValues = new Dictionary<string, dynamic>();
             foreach (var value in reply.Values)
             {
-                dictValues.Add(Guid.Parse(value.Guid), value.Value);
+                dictValues.Add(value.Name, value.Value);
             }
             var tableField = new TableField
             {
                 Guid = Guid.Parse(reply.Guid),
-                TableGuid = Guid.Parse(reply.TableGuid),
+                TableName = reply.TableName,
                 Values = dictValues
             };
             return tableField;
         }
 
-        public List<TableField>? GetAllFieldsByTableGuid(Guid tableGuid)
+        public List<TableField>? GetAllFieldsByTableName(string tableName)
         {
-            var request = new GetAllFieldsByTableGuidRequest { TableGuid = tableGuid.ToString(), DbGuid = dbGuid };
-            var reply = client.GetAllFieldsByTableGuid(request);
+            var request = new GetAllFieldsByTableNameRequest { TableName = tableName, DbName = dbName };
+            var reply = client.GetAllFieldsByTableName(request);
             var tableFields = new List<TableField>(); reply.TableFields.Select(t => new TableField
             {
                 Guid = Guid.Parse(t.Guid),
-                TableGuid = Guid.Parse(t.TableGuid)
+                TableName = t.TableName
             });
             foreach (var tableFieldReply in reply.TableFields)
             {
-                var dictValues = new Dictionary<Guid, dynamic>();
+                var dictValues = new Dictionary<string, dynamic>();
                 foreach (var value in tableFieldReply.Values)
                 {
-                    dictValues.Add(Guid.Parse(value.Guid), value.Value);
+                    dictValues.Add(value.Name, value.Value);
                 }
                 var tableField = new TableField
                 {
                     Guid = Guid.Parse(tableFieldReply.Guid),
-                    TableGuid = Guid.Parse(tableFieldReply.TableGuid),
+                    TableName = tableFieldReply.TableName,
                     Values = dictValues
                 };
                 tableFields.Add(tableField);
@@ -86,17 +86,17 @@ namespace TableDataBase.Services
             var updateFieldRequest = new UpdateFieldRequest
             {
                 Guid = tableField.Guid.ToString(),
-                TableGuid = tableField.TableGuid.ToString(),
-                DbGuid = dbGuid
+                TableName = tableField.TableName,
+                DbName = dbName
             };
-            var values = tableField.Values.Select(x => new ValueReply { Guid = x.Key.ToString(), Value = x.Value.ToString() });
+            var values = tableField.Values.Select(x => new ValueReply { Name = x.Key, Value = x.Value.ToString() });
             updateFieldRequest.Values.Add(values);
             client.UpdateField(updateFieldRequest);
         }
 
-        public void UpdateValue(dynamic Value, Guid attributePropertyGuid, Guid fieldGuid)
+        public void UpdateValue(dynamic Value, string attributePropertyName, Guid fieldGuid)
         {
-            var updateValueRequest = new UpdateValueRequest { Value = Value.ToString(), AttributePropertyGuid = attributePropertyGuid.ToString(), FieldGuid = fieldGuid.ToString(), DbGuid = dbGuid };
+            var updateValueRequest = new UpdateValueRequest { Value = Value.ToString(), AttributePropertyName = attributePropertyName, FieldGuid = fieldGuid.ToString(), DbName = dbName };
             client.UpdateValue(updateValueRequest);
         }
 

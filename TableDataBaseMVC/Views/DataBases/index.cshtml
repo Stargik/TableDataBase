@@ -24,8 +24,8 @@
                     @Html.DisplayFor(modelItem => item.Name)
                 </td>
                 <td class="text-end">
-                    <a asp-action="Tables" asp-route-guid="@item.Guid">Tables</a> |
-                    <a asp-action="Delete" asp-route-guid="@item.Guid">Delete</a>
+                    <a asp-action="Tables" asp-route-name="@item.Name">Tables</a> |
+                    <a asp-action="Delete" asp-route-name="@item.Name">Delete</a>
                 </td>
             </tr>
         }

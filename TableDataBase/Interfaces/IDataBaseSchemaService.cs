@@ -6,26 +6,24 @@ namespace TableDataBase.Interfaces
 	public interface IDataBaseSchemaService
 	{
 		void AddJsonDbObjectSchema(DataBase dataBase);
-		void RemoveJsonDbObjectSchemaByGuid(Guid guid);
-        DataBase? GetDbObjectByGuid(Guid guid);
+		void RemoveJsonDbObjectSchemaByName(string name);
+        DataBase? GetDbObjectByName(string name);
         List<DataBase>? GetAllDbObjects();
 		void UpdateJsonDbObjectSchema(DataBase dataBase);
 
-        void AddTable(Table table, Guid dbGuid);
-        void RemoveTableByGuid(Guid guid, Guid dbGuid);
-        Table? GetTableByGuid(Guid guid, Guid dbGuid);
-        List<Table>? GetAllTablesByDbGuid(Guid dbGuid);
-        void UpdateTable(Table table, Guid dbGuid);
+        void AddTable(Table table, string dbName);
+        void RemoveTableByName(string name, string dbName);
+        Table? GetTableByName(string name, string dbName);
+        List<Table>? GetAllTablesByDbName(string dbName);
+        void UpdateTable(Table table, string dbName);
 
-        void AddAttributeProperty(AttributeProperty attributeProperty, Guid tableGuid, Guid dbGuid);
-        void RemoveAttributePropertyByGuid(Guid guid, Guid tableGuid, Guid dbGuid);
-        AttributeProperty? GetAttributePropertyByGuid(Guid guid, Guid tableGuid, Guid dbGuid);
-		List<AttributeProperty>? GetAllAttributePropertiesByDbTableGuid(Guid tableGuid, Guid dbGuid);
-        void UpdateAttributeProperty(AttributeProperty attributeProperty, Guid tableGuid, Guid dbGuid);
+        void AddAttributeProperty(AttributeProperty attributeProperty, string tableName, string dbName);
+        void RemoveAttributePropertyByName(string name, string tableName, string dbName);
+        AttributeProperty? GetAttributePropertyByName(string name, string tableName, string dbName);
+		List<AttributeProperty>? GetAllAttributePropertiesByDbTableName(string tableName, string dbName);
+        void UpdateAttributeProperty(AttributeProperty attributeProperty, string tableName, string dbName);
 
-        void AddRelation(AttributeProperty attributeProperty, Guid tableGuid, Guid targetTableGuid, Guid dbGuid);
-
-        string? GetDbFileNameByGuid(Guid guid);
+        string? GetDbFileNameByName(string Name);
         string? GetDbFilePath();
         void SaveChanges();
     }

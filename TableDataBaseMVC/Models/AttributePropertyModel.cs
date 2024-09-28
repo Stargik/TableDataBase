@@ -5,11 +5,10 @@ namespace TableDataBaseMVC.Models
 {
 	public class AttributePropertyModel
 	{
-        public Guid Guid { get; set; } = Guid.NewGuid();
-        public Guid DbGuid { get; set; } = Guid.NewGuid();
-        public Guid TableGuid { get; set; } = Guid.NewGuid();
+        public string DbName { get; set; }
+        public string TableName { get; set; }
         public AttributeType AttributeType { get; set; }
-        public string? Name { get; set; }
+        public string Name { get; set; }
     }
 }
 

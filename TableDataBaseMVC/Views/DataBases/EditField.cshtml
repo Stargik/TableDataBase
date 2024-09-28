@@ -1,20 +1,19 @@
 ﻿@model TableFieldModel
 
 @{
-    ViewData["Title"] = ViewBag.Table.Name;
+    ViewData["Title"] = Model.TableName;
     var types = new Dictionary<AttributeType, string>();
     types.Add(AttributeType.Integer, "number");
     types.Add(AttributeType.Real, "number");
     types.Add(AttributeType.Char, "text");
     types.Add(AttributeType.String, "text");
-    types.Add(AttributeType.Relation, "text");
 }
 
 <h1>@ViewData["Title"]: Edit Field</h1>
 <hr />
 <div class="btn-group btn-group-sm" role="group">
     <input type="submit" form="editForm" value="Save" class="btn btn-outline-dark" />
-    <a class="btn btn-outline-dark" asp-action="Fields" asp-route-tableGuid="@Model.TableGuid" asp-route-dbGuid="@Model.DbGuid">Back</a>
+    <a class="btn btn-outline-dark" asp-action="Fields" asp-route-tableName="@Model.TableName" asp-route-dbName="@Model.DbName">Back</a>
 </div>
 <hr />
 <div class="row">
@@ -22,13 +21,24 @@
         <form asp-action="EditField" id="editForm">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
             <input type="hidden" asp-for="Guid" value="@Model.Guid" />
-            <input type="hidden" asp-for="DbGuid" value="@Model.DbGuid" />
-            <input type="hidden" asp-for="TableGuid" value="@ViewBag.Table.Guid" />
+            <input type="hidden" asp-for="DbName" value="@Model.DbName" />
+            <input type="hidden" asp-for="TableName" value="@Model.TableName" />
             @foreach (var column in Model.Columns)
             {
                 <div class="form-group">
-                    <label for="@column.Guid" class="form-label">@column.Name (@column.AttributeType)</label>
-                    <input type="@types[column.AttributeType]" @(column.AttributeType == AttributeType.Real ? "step=any" : "") @(column.AttributeType == AttributeType.Char ? "maxlength=1" : "") name="@column.Guid" value="@Model.Values[@column.Guid]" class="form-control" />
+                    <label for="@column.Name" class="form-label">@column.Name (@column.AttributeType)</label>
+                    @if (column.AttributeType == AttributeType.Html)
+                    {
+                        <textarea class="form-control" name="@column.Name">@Model.Values[@column.Name]</textarea>
+                        @if (ViewData[$"Error_{column.Name}"] is not null)
+                        {
+                            <p class="text-danger">@ViewData[$"Error_{column.Name}"]</p>
+                        }
+                    }
+                    else
+                    {
+                        <input type="@types[column.AttributeType]" @(column.AttributeType == AttributeType.Real ? "step=any" : "") @(column.AttributeType == AttributeType.Char ? "maxlength=1" : "") name="@column.Name" value="@Model.Values[@column.Name]" class="form-control" />
+                    }
                 </div>
             }
         </form>

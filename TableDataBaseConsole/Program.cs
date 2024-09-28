@@ -3,14 +3,16 @@ using Grpc.Net.Client;
 using TableDataBaseServerService;
 using TableDataBase.Interfaces;
 using TableDataBase.Services;
+using System.Text;
+using Newtonsoft.Json;
 
 namespace TableDataBaseConsole;
 
 class Program
 {
-    static void Main(string[] args)
+    static async Task Main(string[] args)
     {
-        AttributeProperty attributeProperty1 = new AttributeProperty
+        /*AttributeProperty attributeProperty1 = new AttributeProperty
         {
             Guid = Guid.NewGuid(),
             AttributeType = AttributeType.Integer,
@@ -112,6 +114,14 @@ class Program
         dataBaseRequest.Tables.AddRange(tables);
 
         client.AddJsonDbObjectSchema(dataBaseRequest);*/
+
+<<<<<<< HEAD
+        // HTML-код, который нужно проверить
+        string html = "<p>hello</p>";
+
+=======
+>>>>>>> 248dfe6 (Removed GUIDs, Added html type)
+
     }
 }
 

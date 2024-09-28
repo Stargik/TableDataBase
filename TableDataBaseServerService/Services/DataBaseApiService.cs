@@ -20,33 +20,29 @@ namespace TableDataBaseServerService.Services
 
         public override Task<Empty> AddJsonDbObjectSchema(AddJsonDbObjectSchemaRequest request, ServerCallContext context)
         {
-            var tables = request.Tables.Select(t => new Table { Guid = Guid.NewGuid(), Name = t.Name, AttributeProperties = t.AttributeProperties.Select(p => new AttributeProperty
+            var tables = request.Tables.Select(t => new Table { Name = t.Name, AttributeProperties = t.AttributeProperties.Select(p => new AttributeProperty
             {
-                Guid = Guid.Parse(p.Guid),
                 Name = p.Name,
-                AttributeType = (AttributeType)p.AttributeType,
-                RelationTableGuid = !String.IsNullOrEmpty(p.RelationTableGuid) ? Guid.Parse(p.RelationTableGuid) : null
+                AttributeType = (AttributeType)p.AttributeType
             }).ToList() }).ToList();
-            var database = new DataBase { Guid = Guid.NewGuid(), Name = request.Name, Tables = tables };
+            var database = new DataBase { Name = request.Name, Tables = tables };
             dataBaseSchemaService.AddJsonDbObjectSchema(database);
             dataBaseSchemaService.SaveChanges();
             return Task.FromResult(new Empty());
         }
 
-        public override Task<Empty> RemoveJsonDbObjectSchemaByGuid(RemoveJsonDbObjectSchemaByGuidRequest request, ServerCallContext context)
+        public override Task<Empty> RemoveJsonDbObjectSchemaByName(RemoveJsonDbObjectSchemaByNameRequest request, ServerCallContext context)
         {
-            var guid = Guid.Parse(request.Guid);
-            dataBaseSchemaService.RemoveJsonDbObjectSchemaByGuid(guid);
+            dataBaseSchemaService.RemoveJsonDbObjectSchemaByName(request.Name);
             dataBaseSchemaService.SaveChanges();
             return Task.FromResult(new Empty());
         }
 
-        public override Task<DataBaseReply> GetDbObjectByGuid(GetDbObjectByGuidRequest request, ServerCallContext context)
+        public override Task<DataBaseReply> GetDbObjectByName(GetDbObjectByNameRequest request, ServerCallContext context)
         {
-            var guid = Guid.Parse(request.Guid);
-            var db = dataBaseSchemaService.GetDbObjectByGuid(guid);
+            var db = dataBaseSchemaService.GetDbObjectByName(request.Name);
             var tables = new List<TableReply>();
-            var tableEntities = db.Tables.Select(t => new TableReply { Guid = t.Guid.ToString(), Name = t.Name }).ToList();
+            var tableEntities = db.Tables.Select(t => new TableReply { Name = t.Name }).ToList();
             if (tableEntities is not null)
             {
                 tables.AddRange(tableEntities);
@@ -54,10 +50,8 @@ namespace TableDataBaseServerService.Services
             foreach (var table in tables)
             {
                 var props = new List<AttributePropertyReply>();
-                var propsEntities = dataBaseSchemaService.GetAllAttributePropertiesByDbTableGuid(Guid.Parse(table.Guid), guid).Select(prop => new AttributePropertyReply {
-                    Guid = prop.Guid.ToString(),
+                var propsEntities = dataBaseSchemaService.GetAllAttributePropertiesByDbTableName(table.Name, request.Name).Select(prop => new AttributePropertyReply {
                     Name = prop.Name,
-                    RelationTableGuid = prop.RelationTableGuid.ToString(),
                     AttributeType = ((int)prop.AttributeType)
                 }).ToList();
                 if (propsEntities is not null)
@@ -66,7 +60,7 @@ namespace TableDataBaseServerService.Services
                 }
                 table.AttributeProperties.AddRange(props);
             }
-            var dataBaseReply = new DataBaseReply { Guid = db.Guid.ToString(), Name = db.Name};
+            var dataBaseReply = new DataBaseReply { Name = db.Name };
             dataBaseReply.Tables.AddRange(tables);
             return Task.FromResult(dataBaseReply);
         }
@@ -80,7 +74,7 @@ namespace TableDataBaseServerService.Services
                 foreach (var db in databases)
                 {
                     var tables = new List<TableReply>();
-                    var tableEntities = db.Tables.Select(t => new TableReply { Guid = t.Guid.ToString(), Name = t.Name }).ToList();
+                    var tableEntities = db.Tables.Select(t => new TableReply { Name = t.Name }).ToList();
                     if (tableEntities is not null)
                     {
                         tables.AddRange(tableEntities);
@@ -88,11 +82,9 @@ namespace TableDataBaseServerService.Services
                     foreach (var table in tables)
                     {
                         var props = new List<AttributePropertyReply>();
-                        var propsEntities = dataBaseSchemaService.GetAllAttributePropertiesByDbTableGuid(Guid.Parse(table.Guid), db.Guid).Select(prop => new AttributePropertyReply
+                        var propsEntities = dataBaseSchemaService.GetAllAttributePropertiesByDbTableName(table.Name, db.Name).Select(prop => new AttributePropertyReply
                         {
-                            Guid = prop.Guid.ToString(),
                             Name = prop.Name,
-                            RelationTableGuid = prop.RelationTableGuid.ToString(),
                             AttributeType = ((int)prop.AttributeType)
                         }).ToList();
                         if (propsEntities is not null)
@@ -101,7 +93,7 @@ namespace TableDataBaseServerService.Services
                         }
                         table.AttributeProperties.AddRange(props);
                     }
-                    var dataBaseReply = new DataBaseReply { Guid = db.Guid.ToString(), Name = db.Name };
+                    var dataBaseReply = new DataBaseReply { Name = db.Name };
                     dataBaseReply.Tables.AddRange(tables);
                     listDataBaseReply.DataBases.Add(dataBaseReply);
                 }
@@ -112,17 +104,14 @@ namespace TableDataBaseServerService.Services
         public override Task<Empty> UpdateJsonDbObjectSchema(UpdateJsonDbObjectSchemaRequest request, ServerCallContext context)
         {
             var tables = request.Tables.Select(t => new Table {
-                Guid = Guid.Parse(t.Guid),
                 Name = t.Name,
                 AttributeProperties = t.AttributeProperties.Select(p => new AttributeProperty
                 {
-                    Guid = Guid.Parse(p.Guid),
                     Name = p.Name,
-                    RelationTableGuid = Guid.Parse(p.RelationTableGuid),
                     AttributeType = (AttributeType)p.AttributeType
                 }).ToList()
             }).ToList();
-            var database = new DataBase { Guid = Guid.Parse(request.Guid), Name = request.Name, Tables = tables };
+            var database = new DataBase { Name = request.Name, Tables = tables };
             dataBaseSchemaService.UpdateJsonDbObjectSchema(database);
             dataBaseSchemaService.SaveChanges();
             return Task.FromResult(new Empty());
@@ -130,65 +119,56 @@ namespace TableDataBaseServerService.Services
 
         public override Task<Empty> AddTable(AddTableRequest request, ServerCallContext context)
         {
-            var table = new Table { Guid = Guid.NewGuid(), Name = request.Table.Name };
-            dataBaseSchemaService.AddTable(table, Guid.Parse(request.DbGuid));
+            var table = new Table { Name = request.Table.Name };
+            dataBaseSchemaService.AddTable(table, request.DbName);
             dataBaseSchemaService.SaveChanges();
             return Task.FromResult(new Empty());
         }
 
-        public override Task<Empty> RemoveTableByGuid(RemoveTableByGuidRequest request, ServerCallContext context)
+        public override Task<Empty> RemoveTableByName(RemoveTableByNameRequest request, ServerCallContext context)
         {
-            var guid = Guid.Parse(request.Guid);
-            var dbGuid = Guid.Parse(request.DbGuid);
-            dataBaseSchemaService.RemoveTableByGuid(guid, dbGuid);
+            dataBaseSchemaService.RemoveTableByName(request.Name, request.DbName);
             dataBaseSchemaService.SaveChanges();
             return Task.FromResult(new Empty());
         }
 
-        public override Task<TableReply> GetTableByGuid(GetTableByGuidRequest request, ServerCallContext context)
+        public override Task<TableReply> GetTableByName(GetTableByNameRequest request, ServerCallContext context)
         {
-            var guid = Guid.Parse(request.Guid);
-            var dbGuid = Guid.Parse(request.DbGuid);
-            var table = dataBaseSchemaService.GetTableByGuid(guid, dbGuid);
+            var table = dataBaseSchemaService.GetTableByName(request.Name, request.DbName);
             var props = new List<AttributePropertyReply>();
             var propsEntities = table.AttributeProperties.Select(prop => new AttributePropertyReply
             {
-                Guid = prop.Guid.ToString(),
                 Name = prop.Name,
-                RelationTableGuid = prop.RelationTableGuid.ToString(),
                 AttributeType = ((int)prop.AttributeType)
             }).ToList();
             if (propsEntities is not null)
             {
                 props.AddRange(propsEntities);
             }
-            var tableReply = new TableReply { Guid = request.Guid, Name = table.Name };
+            var tableReply = new TableReply { Name = table.Name };
             tableReply.AttributeProperties.AddRange(props);
             return Task.FromResult(tableReply);
         }
 
-        public override Task<ListTableReply> GetAllTablesByDbGuid(GetAllTablesByDbGuidRequest request, ServerCallContext context)
+        public override Task<ListTableReply> GetAllTablesByDbName(GetAllTablesByDbNameRequest request, ServerCallContext context)
         {
-            var dbGuid = Guid.Parse(request.DbGuid);
             var listTableReply = new ListTableReply();
-            var tables = dataBaseSchemaService.GetAllTablesByDbGuid(dbGuid);
+            var tables = dataBaseSchemaService.GetAllTablesByDbName(request.DbName);
             if (tables is not null)
             {
                 foreach (var table in tables)
                 {
                     var props = new List<AttributePropertyReply>();
-                    var propsEntities = dataBaseSchemaService.GetAllAttributePropertiesByDbTableGuid(table.Guid, dbGuid).Select(prop => new AttributePropertyReply
+                    var propsEntities = dataBaseSchemaService.GetAllAttributePropertiesByDbTableName(table.Name, request.DbName).Select(prop => new AttributePropertyReply
                     {
-                        Guid = prop.Guid.ToString(),
                         Name = prop.Name,
-                        RelationTableGuid = prop.RelationTableGuid.ToString(),
                         AttributeType = ((int)prop.AttributeType)
                     }).ToList();
                     if (propsEntities is not null)
                     {
                         props.AddRange(propsEntities);
                     }
-                    var tableReply = new TableReply { Guid = table.Guid.ToString(), Name = table.Name };
+                    var tableReply = new TableReply { Name = table.Name };
                     tableReply.AttributeProperties.AddRange(props);
                     listTableReply.Tables.Add(tableReply);
                 }
@@ -198,84 +178,74 @@ namespace TableDataBaseServerService.Services
 
         public override Task<Empty> UpdateTable(UpdateTableRequest request, ServerCallContext context)
         {
-            var dbGuid = Guid.Parse(request.DbGuid);
             var props = request.Table.AttributeProperties.Select(p => new AttributeProperty
             {
-                Guid = Guid.Parse(p.Guid),
                 Name = p.Name,
-                RelationTableGuid = Guid.Parse(p.RelationTableGuid),
                 AttributeType = (AttributeType)p.AttributeType
             }).ToList();
-            var table = new Table { Guid = Guid.Parse(request.Table.Guid), Name = request.Table.Name, AttributeProperties = props };
-            dataBaseSchemaService.UpdateTable(table, dbGuid);
+            var table = new Table { Name = request.Table.Name, AttributeProperties = props };
+            dataBaseSchemaService.UpdateTable(table, request.DbName);
             dataBaseSchemaService.SaveChanges();
             return Task.FromResult(new Empty());
         }
 
         public override Task<Empty> AddAttributeProperty(AddAttributePropertyRequest request, ServerCallContext context)
         {
-            var tableGuid = Guid.Parse(request.TableGuid);
-            var dbGuid = Guid.Parse(request.DbGuid);
             var attributeProperty = new AttributeProperty
             {
-                Guid = Guid.NewGuid(),
                 Name = request.AttributePropertyReply.Name,
-                RelationTableGuid = !String.IsNullOrEmpty(request.AttributePropertyReply.RelationTableGuid) ? Guid.Parse(request.AttributePropertyReply.RelationTableGuid) : null,
                 AttributeType = (AttributeType)request.AttributePropertyReply.AttributeType
             };
-            dataBaseSchemaService.AddAttributeProperty(attributeProperty, tableGuid, dbGuid);
+            dataBaseSchemaService.AddAttributeProperty(attributeProperty, request.TableName, request.DbName);
             dataBaseSchemaService.SaveChanges();
-            var fileName = dataBaseSchemaService.GetDbFileNameByGuid(dbGuid);
+            var fileName = dataBaseSchemaService.GetDbFileNameByName(request.DbName);
             var filePath = dataBaseSchemaService.GetDbFilePath();
             var dataBaseService = new DataBaseService(filePath, fileName);
-            var fields = dataBaseService.GetAllFieldsByTableGuid(tableGuid);
+            var fields = dataBaseService.GetAllFieldsByTableName(request.TableName);
             foreach (var field in fields)
             {
-                field.Values.Add(attributeProperty.Guid, "");
+                field.Values.Add(attributeProperty.Name, "");
             }
             dataBaseService.SaveChanges();
             return Task.FromResult(new Empty());
         }
 
-        public override Task<Empty> RemoveAttributePropertyByGuid(RemoveAttributePropertyByGuidRequest request, ServerCallContext context)
+        public override Task<Empty> RemoveAttributePropertyByName(RemoveAttributePropertyByNameRequest request, ServerCallContext context)
         {
-            var guid = Guid.Parse(request.Guid);
-            var tableGuid = Guid.Parse(request.TableGuid);
-            var dbGuid = Guid.Parse(request.DbGuid);
-            dataBaseSchemaService.RemoveAttributePropertyByGuid(guid, tableGuid, dbGuid);
+            var fileName = dataBaseSchemaService.GetDbFileNameByName(request.DbName);
+            var filePath = dataBaseSchemaService.GetDbFilePath();
+            var dataBaseService = new DataBaseService(filePath, fileName);
+            var fields = dataBaseService.GetAllFieldsByTableName(request.TableName);
+            foreach (var field in fields)
+            {
+                field.Values.Remove(request.Name);
+            }
+            dataBaseService.SaveChanges();
+            dataBaseSchemaService.RemoveAttributePropertyByName(request.Name, request.TableName, request.DbName);
             dataBaseSchemaService.SaveChanges();
             return Task.FromResult(new Empty());
         }
 
-        public override Task<AttributePropertyReply> GetAttributePropertyByGuid(GetAttributePropertyByGuidRequest request, ServerCallContext context)
+        public override Task<AttributePropertyReply> GetAttributePropertyByName(GetAttributePropertyByNameRequest request, ServerCallContext context)
         {
-            var guid = Guid.Parse(request.Guid);
-            var tableGuid = Guid.Parse(request.TableGuid);
-            var dbGuid = Guid.Parse(request.DbGuid);
-            var attributeProperty = dataBaseSchemaService.GetAttributePropertyByGuid(guid, tableGuid, dbGuid);
+            var attributeProperty = dataBaseSchemaService.GetAttributePropertyByName(request.Name, request.TableName, request.DbName);
             var attributePropertyReply = new AttributePropertyReply
             {
-                Guid = attributeProperty.Guid.ToString(),
                 Name = attributeProperty.Name,
-                AttributeType = ((int)attributeProperty.AttributeType),
-                RelationTableGuid = attributeProperty.RelationTableGuid.ToString()
+                AttributeType = ((int)attributeProperty.AttributeType)
             };
             return Task.FromResult(attributePropertyReply);
         }
 
-        public override Task<ListAttributePropertyReply> GetAllAttributePropertiesByDbTableGuid(GetAllAttributePropertiesByDbTableGuidRequest request, ServerCallContext context)
+        public override Task<ListAttributePropertyReply> GetAllAttributePropertiesByDbTableName(GetAllAttributePropertiesByDbTableNameRequest request, ServerCallContext context)
         {
-            var tableGuid = Guid.Parse(request.TableGuid);
-            var dbGuid = Guid.Parse(request.DbGuid);
             var listAttributePropertyReply = new ListAttributePropertyReply();
-            var attributeProperties = dataBaseSchemaService.GetAllAttributePropertiesByDbTableGuid(tableGuid, dbGuid);
+            var attributeProperties = dataBaseSchemaService.GetAllAttributePropertiesByDbTableName(request.TableName, request.DbName);
             if (attributeProperties is not null)
             {
                 var attributePropertyReplies = attributeProperties.Select(p => new AttributePropertyReply
                 {
-                    Guid = p.Guid.ToString(),
                     Name = p.Name,
-                    RelationTableGuid = p.RelationTableGuid.ToString(),
                     AttributeType = ((int)p.AttributeType)
                 });
                 listAttributePropertyReply.AttributeProperties.AddRange(attributePropertyReplies);
@@ -285,51 +255,19 @@ namespace TableDataBaseServerService.Services
 
         public override Task<Empty> UpdateAttributeProperty(UpdateAttributePropertyRequest request, ServerCallContext context)
         {
-            var guid = Guid.Parse(request.AttributePropertyReply.Guid);
-            var tableGuid = Guid.Parse(request.TableGuid);
-            var dbGuid = Guid.Parse(request.DbGuid);
             var attributeProperty = new AttributeProperty
             {
-                Guid = guid,
                 Name = request.AttributePropertyReply.Name,
-                RelationTableGuid = Guid.Parse(request.AttributePropertyReply.RelationTableGuid),
                 AttributeType = (AttributeType)request.AttributePropertyReply.AttributeType
             };
-            dataBaseSchemaService.UpdateAttributeProperty(attributeProperty, tableGuid, dbGuid);
+            dataBaseSchemaService.UpdateAttributeProperty(attributeProperty, request.TableName, request.DbName);
             dataBaseSchemaService.SaveChanges();
             return Task.FromResult(new Empty());
         }
 
-        public override Task<Empty> AddRelation(AddRelationRequest request, ServerCallContext context)
+        public override Task<StringReply> GetDbFileNameByName(GetDbFileNameByNameRequest request, ServerCallContext context)
         {
-            var tableGuid = Guid.Parse(request.TableGuid);
-            var dbGuid = Guid.Parse(request.DbGuid);
-            var targetTableGuid = Guid.Parse(request.TargetTableGuid);
-            var attributeProperty = new AttributeProperty
-            {
-                Guid = Guid.NewGuid(),
-                Name = request.AttributePropertyReply.Name,
-                RelationTableGuid = Guid.Parse(request.AttributePropertyReply.RelationTableGuid),
-                AttributeType = (AttributeType)request.AttributePropertyReply.AttributeType,
-            };
-            dataBaseSchemaService.AddRelation(attributeProperty, tableGuid, targetTableGuid, dbGuid);
-            dataBaseSchemaService.SaveChanges();
-            var fileName = dataBaseSchemaService.GetDbFileNameByGuid(dbGuid);
-            var filePath = dataBaseSchemaService.GetDbFilePath();
-            var dataBaseService = new DataBaseService(filePath, fileName);
-            var fields = dataBaseService.GetAllFieldsByTableGuid(tableGuid);
-            foreach (var field in fields)
-            {
-                field.Values.Add(attributeProperty.Guid, "");
-            }
-            dataBaseService.SaveChanges();
-            return Task.FromResult(new Empty());
-        }
-
-        public override Task<StringReply> GetDbFileNameByGuid(GetDbFileNameByGuidRequest request, ServerCallContext context)
-        {
-            var guid = Guid.Parse(request.Guid);
-            var fileName = dataBaseSchemaService.GetDbFileNameByGuid(guid);
+            var fileName = dataBaseSchemaService.GetDbFileNameByName(request.Name);
             var reply = new StringReply { StringValue = fileName };
             return Task.FromResult(reply);
         }
@@ -343,14 +281,13 @@ namespace TableDataBaseServerService.Services
 
         public override Task<Empty> AddField(AddFieldRequest request, ServerCallContext context)
         {
-            var dbGuid = Guid.Parse(request.DbGuid);
-            var dictValues = new Dictionary<Guid, dynamic>();
+            var dictValues = new Dictionary<string, dynamic>();
             foreach (var value in request.Values)
             {
-                dictValues.Add(Guid.Parse(value.Guid), value.Value);
+                dictValues.Add(value.Name, value.Value);
             }
-            var tableField = new TableField { Guid = Guid.Parse(request.Guid), TableGuid = Guid.Parse(request.TableGuid), Values = dictValues };
-            var fileName = dataBaseSchemaService.GetDbFileNameByGuid(dbGuid);
+            var tableField = new TableField { Guid = Guid.Parse(request.Guid), TableName = request.TableName, Values = dictValues };
+            var fileName = dataBaseSchemaService.GetDbFileNameByName(request.DbName);
             var filePath = dataBaseSchemaService.GetDbFilePath();
             var dataBaseService = new DataBaseService(filePath, fileName);
             dataBaseService.AddField(tableField);
@@ -361,8 +298,7 @@ namespace TableDataBaseServerService.Services
         public override Task<Empty> RemoveFieldByGuid(RemoveFieldByGuidRequest request, ServerCallContext context)
         {
             var guid = Guid.Parse(request.Guid);
-            var dbGuid = Guid.Parse(request.DbGuid);
-            var fileName = dataBaseSchemaService.GetDbFileNameByGuid(dbGuid);
+            var fileName = dataBaseSchemaService.GetDbFileNameByName(request.DbName);
             var filePath = dataBaseSchemaService.GetDbFilePath();
             var dataBaseService = new DataBaseService(filePath, fileName);
             dataBaseService.RemoveFieldByGuid(guid);
@@ -373,37 +309,34 @@ namespace TableDataBaseServerService.Services
         public override Task<TableFieldReply> GetFieldByGuid(GetFieldByGuidRequest request, ServerCallContext context)
         {
             var guid = Guid.Parse(request.Guid);
-            var dbGuid = Guid.Parse(request.DbGuid);
-            var fileName = dataBaseSchemaService.GetDbFileNameByGuid(dbGuid);
+            var fileName = dataBaseSchemaService.GetDbFileNameByName(request.DbName);
             var filePath = dataBaseSchemaService.GetDbFilePath();
             var dataBaseService = new DataBaseService(filePath, fileName);
             var tableField = dataBaseService.GetFieldByGuid(guid);
-            var tableValues = tableField.Values.Select(v => new ValueReply { Guid = v.Key.ToString(), Value = v.Value.ToString() }).ToList();
-            var tableFieldReply = new TableFieldReply { Guid = tableField.Guid.ToString(), TableGuid = tableField.TableGuid.ToString() };
+            var tableValues = tableField.Values.Select(v => new ValueReply { Name = v.Key, Value = v.Value.ToString() }).ToList();
+            var tableFieldReply = new TableFieldReply { Guid = tableField.Guid.ToString(), TableName = tableField.TableName };
             tableFieldReply.Values.Add(tableValues);
             return Task.FromResult(tableFieldReply);
         }
 
-        public override Task<ListTableFieldReply> GetAllFieldsByTableGuid(GetAllFieldsByTableGuidRequest request, ServerCallContext context)
+        public override Task<ListTableFieldReply> GetAllFieldsByTableName(GetAllFieldsByTableNameRequest request, ServerCallContext context)
         {
-            var guid = Guid.Parse(request.TableGuid);
-            var dbGuid = Guid.Parse(request.DbGuid);
-            var fileName = dataBaseSchemaService.GetDbFileNameByGuid(dbGuid);
+            var fileName = dataBaseSchemaService.GetDbFileNameByName(request.DbName);
             var filePath = dataBaseSchemaService.GetDbFilePath();
             var dataBaseService = new DataBaseService(filePath, fileName);
             var listTableFieldReply = new ListTableFieldReply();
-            var tableFields = dataBaseService.GetAllFieldsByTableGuid(guid);
+            var tableFields = dataBaseService.GetAllFieldsByTableName(request.TableName);
             if (tableFields is not null)
             {
                 foreach (var tableField in tableFields)
                 {
                     var values = new List<ValueReply>();
-                    var valuesEntities = tableField.Values.Select(v => new ValueReply { Guid = v.Key.ToString(), Value = v.Value.ToString() }).ToList();
+                    var valuesEntities = tableField.Values.Select(v => new ValueReply { Name = v.Key, Value = v.Value.ToString() }).ToList();
                     if (valuesEntities is not null)
                     {
                         values.AddRange(valuesEntities);
                     }
-                    var tableFieldReply = new TableFieldReply { Guid = tableField.Guid.ToString(), TableGuid = tableField.TableGuid.ToString() };
+                    var tableFieldReply = new TableFieldReply { Guid = tableField.Guid.ToString(), TableName = tableField.TableName };
                     tableFieldReply.Values.AddRange(values);
                     listTableFieldReply.TableFields.Add(tableFieldReply);
                 }
@@ -413,14 +346,13 @@ namespace TableDataBaseServerService.Services
 
         public override Task<Empty> UpdateField(UpdateFieldRequest request, ServerCallContext context)
         {
-            var dbGuid = Guid.Parse(request.DbGuid);
-            var dictValues = new Dictionary<Guid, dynamic>();
+            var dictValues = new Dictionary<string, dynamic>();
             foreach (var value in request.Values)
             {
-                dictValues.Add(Guid.Parse(value.Guid), value.Value);
+                dictValues.Add(value.Name, value.Value);
             }
-            var tableField = new TableField { Guid = Guid.Parse(request.Guid), TableGuid = Guid.Parse(request.TableGuid), Values = dictValues };
-            var fileName = dataBaseSchemaService.GetDbFileNameByGuid(dbGuid);
+            var tableField = new TableField { Guid = Guid.Parse(request.Guid), TableName = request.TableName, Values = dictValues };
+            var fileName = dataBaseSchemaService.GetDbFileNameByName(request.DbName);
             var filePath = dataBaseSchemaService.GetDbFilePath();
             var dataBaseService = new DataBaseService(filePath, fileName);
             dataBaseService.UpdateField(tableField);
@@ -430,13 +362,11 @@ namespace TableDataBaseServerService.Services
 
         public override Task<Empty> UpdateValue(UpdateValueRequest request, ServerCallContext context)
         {
-            var dbGuid = Guid.Parse(request.DbGuid);
-            var attributePropertyGuid = Guid.Parse(request.AttributePropertyGuid);
             var fieldGuid = Guid.Parse(request.FieldGuid);
-            var fileName = dataBaseSchemaService.GetDbFileNameByGuid(dbGuid);
+            var fileName = dataBaseSchemaService.GetDbFileNameByName(request.DbName);
             var filePath = dataBaseSchemaService.GetDbFilePath();
             var dataBaseService = new DataBaseService(filePath, fileName);
-            dataBaseService.UpdateValue(request.Value, attributePropertyGuid, fieldGuid);
+            dataBaseService.UpdateValue(request.Value, request.AttributePropertyName, fieldGuid);
             dataBaseService.SaveChanges();
             return Task.FromResult(new Empty());
         }

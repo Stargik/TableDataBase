@@ -1,10 +1,12 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System.Xml.Linq;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.CodeAnalysis;
 using TableDataBase.Interfaces;
 using TableDataBase.Models;
 using TableDataBase.Services;
 using TableDataBaseMVC.Models;
+using TableDataBaseMVC.Validators;
 
 namespace TableDataBaseMVC.Controllers
 {
@@ -53,9 +55,9 @@ namespace TableDataBaseMVC.Controllers
             return View(dbs);
         }
 
-        public IActionResult Tables(Guid guid)
+        public IActionResult Tables(string name)
         {
-            var db = dataBaseSchemaService.GetDbObjectByGuid(guid);
+            var db = dataBaseSchemaService.GetDbObjectByName(name);
             return View(db);
         }
 
@@ -70,6 +72,10 @@ namespace TableDataBaseMVC.Controllers
         {
             if (ModelState.IsValid)
             {
+                if (dataBaseSchemaService.GetAllDbObjects().Select(x => x.Name).Contains(dataBase.Name))
+                {
+                    return View(dataBase);
+                }
                 dataBaseSchemaService.AddJsonDbObjectSchema(dataBase);
                 dataBaseSchemaService.SaveChanges();
                 return RedirectToAction(nameof(Index));
@@ -77,10 +83,13 @@ namespace TableDataBaseMVC.Controllers
             return View(dataBase);
         }
 
-        public IActionResult CreateTable(Guid dbGuid)
+        public IActionResult CreateTable(string dbName)
         {
-            ViewData["DbGuid"] = dbGuid;
-            return View();
+            var tableModel = new TableModel
+            {
+                DbName = dbName
+            };
+            return View(tableModel);
         }
 
         [HttpPost]
@@ -89,19 +98,26 @@ namespace TableDataBaseMVC.Controllers
         {
             if (ModelState.IsValid)
             {
-                var table = new Table { Name = tableModel.Name, Guid = Guid.NewGuid(), AttributeProperties = tableModel.AttributeProperties };
-                dataBaseSchemaService.AddTable(table, tableModel.DbGuid);
+                if (dataBaseSchemaService.GetAllTablesByDbName(tableModel.DbName).Select(x => x.Name).Contains(tableModel.Name))
+                {
+                    return View(tableModel);
+                }
+                var table = new Table { Name = tableModel.Name, AttributeProperties = tableModel.AttributeProperties };
+                dataBaseSchemaService.AddTable(table, tableModel.DbName);
                 dataBaseSchemaService.SaveChanges();
-                return RedirectToAction("Tables", new { guid = tableModel.DbGuid });
+                return RedirectToAction("Tables", new { name = tableModel.DbName });
             }
             return View(tableModel);
         }
 
-        public IActionResult CreateProperty(Guid tableGuid, Guid dbGuid)
+        public IActionResult CreateProperty(string tableName, string dbName)
         {
-            ViewData["DbGuid"] = dbGuid;
-            ViewData["TableGuid"] = tableGuid;
-            return View();
+            var attributePropertyModel = new AttributePropertyModel
+            {
+                DbName = dbName,
+                TableName = tableName
+            };
+            return View(attributePropertyModel);
         }
 
         [HttpPost]
@@ -110,152 +126,119 @@ namespace TableDataBaseMVC.Controllers
         {
             if (ModelState.IsValid)
             {
-                var attrProperty = new AttributeProperty { Name = attributePropertyModel.Name, Guid = Guid.NewGuid(), AttributeType = attributePropertyModel.AttributeType };
-                dataBaseSchemaService.AddAttributeProperty(attrProperty, attributePropertyModel.TableGuid, attributePropertyModel.DbGuid);
-                dataBaseSchemaService.SaveChanges();
-                var dataBaseService = GetDataBaseService(attributePropertyModel.DbGuid);
-                var fields = dataBaseService.GetAllFieldsByTableGuid(attributePropertyModel.TableGuid);
-                foreach (var field in fields)
+                if (dataBaseSchemaService.GetAllAttributePropertiesByDbTableName(attributePropertyModel.TableName, attributePropertyModel.DbName).Select(x => x.Name).Contains(attributePropertyModel.Name))
                 {
-                    field.Values.Add(attrProperty.Guid, "");
+                    return View(attributePropertyModel);
                 }
-                dataBaseService.SaveChanges();
-                return RedirectToAction("EditTable", new { guid = attributePropertyModel.TableGuid, dbGuid = attributePropertyModel.DbGuid });
+                var attrProperty = new AttributeProperty { Name = attributePropertyModel.Name, AttributeType = attributePropertyModel.AttributeType };
+                dataBaseSchemaService.AddAttributeProperty(attrProperty, attributePropertyModel.TableName, attributePropertyModel.DbName);
+                dataBaseSchemaService.SaveChanges();
+                return RedirectToAction("EditTable", new { name = attributePropertyModel.TableName, dbName = attributePropertyModel.DbName });
             }
             return View(attributePropertyModel);
         }
 
-        public IActionResult CreateRelation(Guid tableGuid, Guid dbGuid)
+        public IActionResult Delete(string name)
         {
-            ViewData["DbGuid"] = dbGuid;
-            ViewData["TableGuid"] = tableGuid;
-            var tables = dataBaseSchemaService.GetAllTablesByDbGuid(dbGuid);
-            ViewData["RelationTableGuid"] = new SelectList(tables, "Guid", "Name");
-            return View();
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public IActionResult CreateRelation(RelationModel relationModel)
-        {
-            if (ModelState.IsValid)
+            var tableNames = dataBaseSchemaService.GetAllTablesByDbName(name).Select(x => x.Name);
+            var dataBaseService = GetDataBaseService(name);
+            foreach (var tableName in tableNames)
             {
-                var relationTable = dataBaseSchemaService.GetTableByGuid(relationModel.RelationTableGuid, relationModel.DbGuid);
-                var attrProperty = new AttributeProperty { Name = relationModel.Name, Guid = Guid.NewGuid(), AttributeType = AttributeType.Relation, RelationTableGuid = relationModel.RelationTableGuid };
-                dataBaseSchemaService.AddRelation(attrProperty, relationModel.TableGuid, relationTable.Guid, relationModel.DbGuid);
-                dataBaseSchemaService.SaveChanges();
-                var dataBaseService = GetDataBaseService(relationModel.DbGuid);
-                var fields = dataBaseService.GetAllFieldsByTableGuid(relationModel.TableGuid);
-                foreach (var field in fields)
-                {
-                    field.Values.Add(attrProperty.Guid, "");
-                }
-                dataBaseService.SaveChanges();
-                return RedirectToAction("EditTable", new { guid = relationModel.TableGuid, dbGuid = relationModel.DbGuid });
-            }
-            ViewData["DbGuid"] = relationModel.DbGuid;
-            ViewData["TableGuid"] = relationModel.TableGuid;
-            var tables = dataBaseSchemaService.GetAllTablesByDbGuid(relationModel.DbGuid);
-            ViewData["RelationTableGuid"] = new SelectList(tables, "Guid", "Name");
-            return View(relationModel);
-        }
-
-        public IActionResult Delete(Guid guid)
-        {
-            var tableGuids = dataBaseSchemaService.GetAllTablesByDbGuid(guid).Select(x => x.Guid);
-            var dataBaseService = GetDataBaseService(guid);
-            foreach (var tableGuid in tableGuids)
-            {
-                var fieldGuids = dataBaseService.GetAllFieldsByTableGuid(tableGuid).Select(x => x.Guid);
+                var fieldGuids = dataBaseService.GetAllFieldsByTableName(tableName).Select(x => x.Guid);
                 foreach (var fieldGuid in fieldGuids)
                 {
                     dataBaseService.RemoveFieldByGuid(fieldGuid);
                 }
             }
             dataBaseService.SaveChanges();
-            dataBaseSchemaService.RemoveJsonDbObjectSchemaByGuid(guid);
+            dataBaseSchemaService.RemoveJsonDbObjectSchemaByName(name);
             dataBaseSchemaService.SaveChanges();
             var dbs = dataBaseSchemaService.GetAllDbObjects();
             return View("Index", dbs);
         }
 
-        public IActionResult DeleteTable(Guid guid, Guid dbGuid)
+        public IActionResult DeleteTable(string name, string dbName)
         {
-            var dataBaseService = GetDataBaseService(dbGuid);
-            var fieldGuids = dataBaseService.GetAllFieldsByTableGuid(guid).Select(x => x.Guid);
+            var dataBaseService = GetDataBaseService(dbName);
+            var fieldGuids = dataBaseService.GetAllFieldsByTableName(name).Select(x => x.Guid);
             foreach (var fieldGuid in fieldGuids)
             {
                 dataBaseService.RemoveFieldByGuid(fieldGuid);
             }
             dataBaseService.SaveChanges();
-            dataBaseSchemaService.RemoveTableByGuid(guid, dbGuid);
+            dataBaseSchemaService.RemoveTableByName(name, dbName);
             dataBaseSchemaService.SaveChanges();
-            var db = dataBaseSchemaService.GetDbObjectByGuid(dbGuid);
+            var db = dataBaseSchemaService.GetDbObjectByName(dbName);
             return View("Tables", db);
         }
 
-        public IActionResult DeleteProperty(Guid guid, Guid tableGuid, Guid dbGuid)
+        public IActionResult DeleteProperty(string name, string tableName, string dbName)
         {
-            var dataBaseService = GetDataBaseService(dbGuid);
-            var fields = dataBaseService.GetAllFieldsByTableGuid(tableGuid);
+            var dataBaseService = GetDataBaseService(dbName);
+            var fields = dataBaseService.GetAllFieldsByTableName(tableName);
             foreach (var field in fields)
             {
-                field.Values.Remove(guid);
+                field.Values.Remove(name);
             }
             dataBaseService.SaveChanges();
-            dataBaseSchemaService.RemoveAttributePropertyByGuid(guid, tableGuid, dbGuid);
+            dataBaseSchemaService.RemoveAttributePropertyByName(name, tableName, dbName);
             dataBaseSchemaService.SaveChanges();
-            ViewData["DbGuid"] = dbGuid;
-            var table = dataBaseSchemaService.GetTableByGuid(tableGuid, dbGuid);
+            ViewData["DbName"] = dbName;
+            var table = dataBaseSchemaService.GetTableByName(tableName, dbName);
             return View("EditTable", table);
         }
 
-        public IActionResult EditTable(Guid guid, Guid dbGuid)
+        public IActionResult EditTable(string name, string dbName)
         {
-            ViewData["DbGuid"] = dbGuid;
-            var table = dataBaseSchemaService.GetTableByGuid(guid, dbGuid);
+            ViewData["DbName"] = dbName;
+            var table = dataBaseSchemaService.GetTableByName(name, dbName);
             return View(table);
         }
 
-        public IActionResult Fields(Guid tableGuid, Guid dbGuid)
+        public IActionResult Fields(string tableName, string dbName)
         {
-            var table = dataBaseSchemaService.GetTableByGuid(tableGuid, dbGuid);
-            ViewData["DbGuid"] = dbGuid;
+            var table = dataBaseSchemaService.GetTableByName(tableName, dbName);
+            ViewData["DbName"] = dbName;
             ViewBag.Table = table;
-            var filterValues = new Dictionary<Guid, string>();
-            filterValues.Add(table.Guid, Request.Query.ContainsKey(table.Guid.ToString()) ? Request.Query[table.Guid.ToString()].ToString() : "");
+            var filterValues = new Dictionary<string, string>();
             foreach (var filter in table.AttributeProperties)
             {
-                filterValues.Add(filter.Guid, Request.Query.ContainsKey(filter.Guid.ToString()) ? Request.Query[filter.Guid.ToString()].ToString() : "");
+                filterValues.Add(filter.Name, Request.Query.ContainsKey(filter.Name) ? Request.Query[filter.Name].ToString() : "");
             }
             ViewBag.FilterValues = filterValues;
-            var dataBaseService = GetDataBaseService(dbGuid);
-            var properties = dataBaseService.GetAllFieldsByTableGuid(tableGuid);
+            var dataBaseService = GetDataBaseService(dbName);
+            var fields = dataBaseService.GetAllFieldsByTableName(tableName).Select(x => new TableFieldModel
+            {
+                Guid = x.Guid,
+                TableName = x.TableName,
+                DbName = dbName,
+                Values = x.Values,
+                Columns = table.AttributeProperties
+            });
             foreach (var filterValue in filterValues)
             {
                 if (!String.IsNullOrEmpty(filterValue.Value))
                 {
-                    properties = properties.Where(x => (x.Values.ContainsKey(filterValue.Key) && x.Values[filterValue.Key].ToString().Contains(filterValue.Value)) || (x.TableGuid == filterValue.Key && x.Guid.ToString().Contains(filterValue.Value))).ToList();
+                    fields = fields.Where(x => (x.Values.ContainsKey(filterValue.Key) && x.Values[filterValue.Key].ToString().Contains(filterValue.Value))).ToList();
                 }
             }
-            return View(properties);
+            return View(fields);
         }
 
-        public IActionResult CreateField(Guid tableGuid, Guid dbGuid)
+        public IActionResult CreateField(string tableName, string dbName)
         {
-            var table = dataBaseSchemaService.GetTableByGuid(tableGuid, dbGuid);
-            ViewBag.Table = table;
+            var table = dataBaseSchemaService.GetTableByName(tableName, dbName);
             var tableFieldModel = new TableFieldModel
             {
                 Guid = Guid.NewGuid(),
-                DbGuid = dbGuid,
+                DbName = dbName,
                 Columns = table.AttributeProperties,
-                TableGuid = tableGuid,
-                Values = new Dictionary<Guid, dynamic>()
+                TableName = tableName,
+                Values = new Dictionary<string, dynamic>()
             };
             foreach (var column in tableFieldModel.Columns)
             {
-                tableFieldModel.Values.Add(column.Guid, "");
+                tableFieldModel.Values.Add(column.Name, "");
             }
             return View(tableFieldModel);
         }
@@ -264,54 +247,62 @@ namespace TableDataBaseMVC.Controllers
         [ValidateAntiForgeryToken]
         public IActionResult CreateField(IFormCollection tableFieldModelCollection)
         {
-            var tableGuid = Guid.Parse(tableFieldModelCollection["TableGuid"]);
-            var dbGuid = Guid.Parse(tableFieldModelCollection["DbGuid"]);
-            var table = dataBaseSchemaService.GetTableByGuid(tableGuid, dbGuid);
-            var dictValues = new Dictionary<Guid, dynamic>();
-            var keys = tableFieldModelCollection.Keys.Where(x => table.AttributeProperties.Select(prop => prop.Guid.ToString()).Contains(x));
+            var tableName = tableFieldModelCollection["TableName"];
+            var dbName = tableFieldModelCollection["DbName"];
+            var table = dataBaseSchemaService.GetTableByName(tableName, dbName);
+            var dictValues = new Dictionary<string, dynamic>();
+            var keys = tableFieldModelCollection.Keys.Where(x => table.AttributeProperties.Select(prop => prop.Name).Contains(x));
             ViewBag.Table = table;
             var tableFieldModel = new TableFieldModel
             {
                 Guid = Guid.NewGuid(),
-                TableGuid = tableGuid,
-                DbGuid = dbGuid,
+                TableName = tableName,
+                DbName = dbName,
                 Columns = table.AttributeProperties,
-                Values = new Dictionary<Guid, dynamic>()
+                Values = new Dictionary<string, dynamic>()
             };
             foreach (var key in keys)
             {
-                tableFieldModel.Values.Add(Guid.Parse(key), tableFieldModelCollection[key].FirstOrDefault());
+                tableFieldModel.Values.Add(key, tableFieldModelCollection[key].FirstOrDefault());
+            }
+            var htmlValues = tableFieldModel.Values.Where(v => table.AttributeProperties.FirstOrDefault(x => x.Name == v.Key).AttributeType == AttributeType.Html);
+            foreach (var html in htmlValues)
+            {
+                if (!CheckHtml.IsValid(html.Value)) {
+                    ViewData[$"Error_{html.Key}"] = $"Html is not valid";
+                    return View(tableFieldModel);
+                }
             }
             if (ModelState.IsValid)
             {
-                var tableField = new TableField { Guid = tableFieldModel.Guid, TableGuid = tableFieldModel.TableGuid, Values = tableFieldModel.Values };
-                var dataBaseService = GetDataBaseService(dbGuid);
+                var tableField = new TableField { Guid = tableFieldModel.Guid, TableName = tableFieldModel.TableName, Values = tableFieldModel.Values };
+                var dataBaseService = GetDataBaseService(dbName);
                 dataBaseService.AddField(tableField);
                 dataBaseService.SaveChanges();
-                return RedirectToAction("Fields", new { tableGuid, dbGuid });
+                return RedirectToAction("Fields", new { tableName, dbName });
             }
             return View(tableFieldModel);
         }
 
-        public IActionResult DeleteField(Guid guid, Guid tableGuid, Guid dbGuid)
+        public IActionResult DeleteField(Guid guid, string tableName, string dbName)
         {
-            var dataBaseService = GetDataBaseService(dbGuid);
+            var dataBaseService = GetDataBaseService(dbName);
             dataBaseService.RemoveFieldByGuid(guid);
             dataBaseService.SaveChanges();
-            return RedirectToAction("Fields", new { tableGuid, dbGuid });
+            return RedirectToAction("Fields", new { tableName, dbName });
         }
 
-        public IActionResult EditField(Guid guid, Guid tableGuid, Guid dbGuid)
+        public IActionResult EditField(Guid guid, string tableName, string dbName)
         {
-            var table = dataBaseSchemaService.GetTableByGuid(tableGuid, dbGuid);
-            var dataBaseService = GetDataBaseService(dbGuid);
+            var table = dataBaseSchemaService.GetTableByName(tableName, dbName);
+            var dataBaseService = GetDataBaseService(dbName);
             var tableField = dataBaseService.GetFieldByGuid(guid);
             ViewBag.Table = table;
             var tableFieldModel = new TableFieldModel
             {
                 Guid = tableField.Guid,
-                DbGuid = dbGuid,
-                TableGuid = tableGuid,
+                DbName = dbName,
+                TableName = tableName,
                 Columns = table.AttributeProperties,
                 Values = tableField.Values
             };
@@ -322,47 +313,55 @@ namespace TableDataBaseMVC.Controllers
         [ValidateAntiForgeryToken]
         public IActionResult EditField(IFormCollection tableFieldModelCollection)
         {
-            var tableGuid = Guid.Parse(tableFieldModelCollection["TableGuid"]);
-            var dbGuid = Guid.Parse(tableFieldModelCollection["DbGuid"]);
-            var table = dataBaseSchemaService.GetTableByGuid(tableGuid, dbGuid);
+            var tableName = tableFieldModelCollection["TableName"];
+            var dbName = tableFieldModelCollection["DbName"];
+            var table = dataBaseSchemaService.GetTableByName(tableName, dbName);
             var dictValues = new Dictionary<Guid, dynamic>();
-            var keys = tableFieldModelCollection.Keys.Where(x => table.AttributeProperties.Select(prop => prop.Guid.ToString()).Contains(x));
-            ViewBag.Table = table;
+            var keys = tableFieldModelCollection.Keys.Where(x => table.AttributeProperties.Select(prop => prop.Name).Contains(x));
             var tableFieldModel = new TableFieldModel
             {
                 Guid = Guid.Parse(tableFieldModelCollection["Guid"]),
-                TableGuid = tableGuid,
-                DbGuid = dbGuid,
+                TableName = tableName,
+                DbName = dbName,
                 Columns = table.AttributeProperties,
-                Values = new Dictionary<Guid, dynamic>()
+                Values = new Dictionary<string, dynamic>()
             };
             foreach (var key in keys)
             {
-                tableFieldModel.Values.Add(Guid.Parse(key), tableFieldModelCollection[key].FirstOrDefault());
+                tableFieldModel.Values.Add(key, tableFieldModelCollection[key].FirstOrDefault());
+            }
+            var htmlValues = tableFieldModel.Values.Where(v => table.AttributeProperties.FirstOrDefault(x => x.Name == v.Key).AttributeType == AttributeType.Html);
+            foreach (var html in htmlValues)
+            {
+                if (!CheckHtml.IsValid(html.Value))
+                {
+                    ViewData[$"Error_{html.Key}"] = $"Html is not valid";
+                    return View(tableFieldModel);
+                }
             }
             if (ModelState.IsValid)
             {
-                var tableField = new TableField { Guid = tableFieldModel.Guid, TableGuid = tableFieldModel.TableGuid, Values = tableFieldModel.Values };
-                var dataBaseService = GetDataBaseService(dbGuid);
+                var tableField = new TableField { Guid = tableFieldModel.Guid, TableName = tableFieldModel.TableName, Values = tableFieldModel.Values };
+                var dataBaseService = GetDataBaseService(dbName);
                 dataBaseService.UpdateField(tableField);
                 dataBaseService.SaveChanges();
-                return RedirectToAction("Fields", new { tableGuid, dbGuid });
+                return RedirectToAction("Fields", new { tableName, dbName });
             }
             return View(tableFieldModel);
         }
 
-        private IDataBaseService GetDataBaseService(Guid dbGuid)
+        private IDataBaseService GetDataBaseService(string dbName)
         {
             if (isLocal)
             {
-                var fileName = dataBaseSchemaService.GetDbFileNameByGuid(dbGuid);
+                var fileName = dataBaseSchemaService.GetDbFileNameByName(dbName);
                 var filePath = dataBaseSchemaService.GetDbFilePath();
                 var dataBaseService = new DataBaseService(filePath, fileName);
                 return dataBaseService;
             }
             else
             {
-                var dataBaseService = new DataBaseClientService(connectionString, dbGuid.ToString());
+                var dataBaseService = new DataBaseClientService(connectionString, dbName);
                 return dataBaseService;
             }
         }
