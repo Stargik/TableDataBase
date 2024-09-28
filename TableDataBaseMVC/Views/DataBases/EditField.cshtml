@@ -7,6 +7,7 @@
     types.Add(AttributeType.Real, "number");
     types.Add(AttributeType.Char, "text");
     types.Add(AttributeType.String, "text");
+    types.Add(AttributeType.StringInvl, "text");
 }
 
 <h1>@ViewData["Title"]: Edit Field</h1>
@@ -34,6 +35,27 @@
                         {
                             <p class="text-danger">@ViewData[$"Error_{column.Name}"]</p>
                         }
+                    }
+                    else if (column.AttributeType == AttributeType.StringInvl)
+                    {
+                        <div class="row">
+                            <div class="col-6">
+                                <div class="input-group">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text" id="@column.Name">Min:</span>
+                                    </div>
+                                    <input type="@types[column.AttributeType]" name="@column.Name" value="@Model.Values[@column.Name].Min" class="form-control" />
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="input-group">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text" id="@column.Name">Max:</span>
+                                    </div>
+                                    <input type="@types[column.AttributeType]" name="@column.Name" value="@Model.Values[@column.Name].Max" class="form-control" />
+                                </div>
+                            </div>
+                        </div>
                     }
                     else
                     {

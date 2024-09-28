@@ -7,6 +7,7 @@
     types.Add(AttributeType.Real, "number");
     types.Add(AttributeType.Char, "text");
     types.Add(AttributeType.String, "text");
+    types.Add(AttributeType.StringInvl, "text");
 }
 
 <h1>@ViewData["Title"]: Add Field</h1>
@@ -17,7 +18,7 @@
 </div>
 <hr />
 <div class="row">
-    <div class="col-md-4">
+    <div class="col-md-8">
         <form asp-action="CreateField" id="createForm">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
             <input type="hidden" asp-for="DbName" value="@Model.DbName" />
@@ -34,9 +35,30 @@
                             <p class="text-danger">@ViewData[$"Error_{column.Name}"]</p>
                         }
                     }
+                    else if (column.AttributeType == AttributeType.StringInvl)
+                    {
+                <div class="row">
+                    <div class="col-6">
+                        <div class="input-group">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text" id="@column.Name">Min:</span>
+                            </div>
+                            <input type="@types[column.AttributeType]" name="@column.Name" value="@Model.Values[@column.Name].Min" class="form-control" />
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="input-group">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text" id="@column.Name">Max:</span>
+                            </div>
+                            <input type="@types[column.AttributeType]" name="@column.Name" value="@Model.Values[@column.Name].Max" class="form-control" />
+                        </div>
+                    </div>
+                </div>
+                    }
                     else
                     {
-                        <input type="@types[column.AttributeType]" @(column.AttributeType == AttributeType.Real ? "step=any" : "") @(column.AttributeType == AttributeType.Char ? "maxlength=1" : "") name="@column.Name" value="@Model.Values[@column.Name]" class="form-control" />
+                    <input type="@types[column.AttributeType]" @(column.AttributeType == AttributeType.Real ? "step=any" : "") @(column.AttributeType == AttributeType.Char ? "maxlength=1" : "") name="@column.Name" value="@Model.Values[@column.Name]" class="form-control" />
                     }
                 </div>
             }

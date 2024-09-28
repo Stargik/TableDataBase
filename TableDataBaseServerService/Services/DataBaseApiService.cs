@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
+﻿using Newtonsoft.Json;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using TableDataBase.Interfaces;
@@ -204,7 +202,14 @@ namespace TableDataBaseServerService.Services
             var fields = dataBaseService.GetAllFieldsByTableName(request.TableName);
             foreach (var field in fields)
             {
-                field.Values.Add(attributeProperty.Name, "");
+                if((AttributeType)request.AttributePropertyReply.AttributeType == AttributeType.StringInvl)
+                {
+                    field.Values.Add(attributeProperty.Name, new StringInvl());
+                }
+                else
+                {
+                    field.Values.Add(attributeProperty.Name, "");
+                }
             }
             dataBaseService.SaveChanges();
             return Task.FromResult(new Empty());
@@ -284,7 +289,15 @@ namespace TableDataBaseServerService.Services
             var dictValues = new Dictionary<string, dynamic>();
             foreach (var value in request.Values)
             {
-                dictValues.Add(value.Name, value.Value);
+                if (dataBaseSchemaService.GetAttributePropertyByName(value.Name, request.TableName, request.DbName).AttributeType == AttributeType.StringInvl)
+                {
+                    var insertValue = JsonConvert.DeserializeObject<StringInvl>(value.Value);
+                    dictValues.Add(value.Name, insertValue ?? new StringInvl());
+                }
+                else
+                {
+                    dictValues.Add(value.Name, JsonConvert.DeserializeObject<string>(value.Value));
+                }
             }
             var tableField = new TableField { Guid = Guid.Parse(request.Guid), TableName = request.TableName, Values = dictValues };
             var fileName = dataBaseSchemaService.GetDbFileNameByName(request.DbName);
@@ -349,7 +362,15 @@ namespace TableDataBaseServerService.Services
             var dictValues = new Dictionary<string, dynamic>();
             foreach (var value in request.Values)
             {
-                dictValues.Add(value.Name, value.Value);
+                if (dataBaseSchemaService.GetAttributePropertyByName(value.Name, request.TableName, request.DbName).AttributeType == AttributeType.StringInvl)
+                {
+                    var insertValue = JsonConvert.DeserializeObject<StringInvl>(value.Value);
+                    dictValues.Add(value.Name, insertValue ?? new StringInvl());
+                }
+                else
+                {
+                    dictValues.Add(value.Name, JsonConvert.DeserializeObject<string>(value.Value));
+                }
             }
             var tableField = new TableField { Guid = Guid.Parse(request.Guid), TableName = request.TableName, Values = dictValues };
             var fileName = dataBaseSchemaService.GetDbFileNameByName(request.DbName);

@@ -1,7 +1,10 @@
-﻿using System.Xml.Linq;
+﻿using System.Text.RegularExpressions;
+using System.Xml.Linq;
+using Google.Protobuf.WellKnownTypes;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.CodeAnalysis;
+using Newtonsoft.Json;
 using TableDataBase.Interfaces;
 using TableDataBase.Models;
 using TableDataBase.Services;
@@ -200,10 +203,17 @@ namespace TableDataBaseMVC.Controllers
             var table = dataBaseSchemaService.GetTableByName(tableName, dbName);
             ViewData["DbName"] = dbName;
             ViewBag.Table = table;
-            var filterValues = new Dictionary<string, string>();
+            var filterValues = new Dictionary<string, string[]>();
             foreach (var filter in table.AttributeProperties)
             {
-                filterValues.Add(filter.Name, Request.Query.ContainsKey(filter.Name) ? Request.Query[filter.Name].ToString() : "");
+                if (filter.AttributeType == AttributeType.StringInvl)
+                {
+                    filterValues.Add(filter.Name, Request.Query.ContainsKey(filter.Name) ? new string[] { Request.Query[filter.Name][0].ToString(), Request.Query[filter.Name][1].ToString() } : new string[] { "", "" });
+                }
+                else
+                {
+                    filterValues.Add(filter.Name, Request.Query.ContainsKey(filter.Name) ? new string[] { Request.Query[filter.Name].ToString() } : new string[] { "" });
+                }
             }
             ViewBag.FilterValues = filterValues;
             var dataBaseService = GetDataBaseService(dbName);
@@ -215,11 +225,29 @@ namespace TableDataBaseMVC.Controllers
                 Values = x.Values,
                 Columns = table.AttributeProperties
             });
+            foreach (var field in fields)
+            {
+                foreach (var value in field.Values.Where(v => field.Columns.FirstOrDefault(f => f.AttributeType == AttributeType.StringInvl).Name == v.Key))
+                {
+                    field.Values[value.Key] = JsonConvert.DeserializeObject<StringInvl>(value.Value);
+                }
+            }
             foreach (var filterValue in filterValues)
             {
-                if (!String.IsNullOrEmpty(filterValue.Value))
+                if (filterValue.Value.Count() == 1 && !String.IsNullOrEmpty(filterValue.Value[0]))
                 {
-                    fields = fields.Where(x => (x.Values.ContainsKey(filterValue.Key) && x.Values[filterValue.Key].ToString().Contains(filterValue.Value))).ToList();
+                    fields = fields.Where(x => (x.Values.ContainsKey(filterValue.Key) && Regex.IsMatch(x.Values[filterValue.Key].ToString(), filterValue.Value[0]))).ToList();
+                }
+                else if (filterValue.Value.Count() == 2)
+                {
+                    if (!String.IsNullOrEmpty(filterValue.Value[0]))
+                    {
+                        fields = fields.Where(x => (x.Values.ContainsKey(filterValue.Key) && Regex.IsMatch(x.Values[filterValue.Key].Min.ToString(), filterValue.Value[0]))).ToList();
+                    }
+                    if (!String.IsNullOrEmpty(filterValue.Value[1]))
+                    {
+                        fields = fields.Where(x => (x.Values.ContainsKey(filterValue.Key) && Regex.IsMatch(x.Values[filterValue.Key].Max.ToString(), filterValue.Value[1]))).ToList();
+                    }
                 }
             }
             return View(fields);
@@ -238,7 +266,14 @@ namespace TableDataBaseMVC.Controllers
             };
             foreach (var column in tableFieldModel.Columns)
             {
-                tableFieldModel.Values.Add(column.Name, "");
+                if(column.AttributeType == AttributeType.StringInvl)
+                {
+                    tableFieldModel.Values.Add(column.Name, new StringInvl());
+                }
+                else
+                {
+                    tableFieldModel.Values.Add(column.Name, "");
+                }
             }
             return View(tableFieldModel);
         }
@@ -263,7 +298,14 @@ namespace TableDataBaseMVC.Controllers
             };
             foreach (var key in keys)
             {
-                tableFieldModel.Values.Add(key, tableFieldModelCollection[key].FirstOrDefault());
+                if (tableFieldModel.Columns.FirstOrDefault(x => x.Name == key).AttributeType == AttributeType.StringInvl)
+                {
+                    tableFieldModel.Values.Add(key, new StringInvl { Max = tableFieldModelCollection[key][0] ?? "", Min = tableFieldModelCollection[key][1] ?? "" } );
+                }
+                else
+                {
+                    tableFieldModel.Values.Add(key, tableFieldModelCollection[key].FirstOrDefault() ?? "");
+                }
             }
             var htmlValues = tableFieldModel.Values.Where(v => table.AttributeProperties.FirstOrDefault(x => x.Name == v.Key).AttributeType == AttributeType.Html);
             foreach (var html in htmlValues)
@@ -306,6 +348,10 @@ namespace TableDataBaseMVC.Controllers
                 Columns = table.AttributeProperties,
                 Values = tableField.Values
             };
+            foreach (var value in tableFieldModel.Values.Where(v => tableFieldModel.Columns.FirstOrDefault(f => f.AttributeType == AttributeType.StringInvl).Name == v.Key))
+            {
+                tableFieldModel.Values[value.Key] = JsonConvert.DeserializeObject<StringInvl>(value.Value);
+            }
             return View(tableFieldModel);
         }
 
@@ -328,7 +374,14 @@ namespace TableDataBaseMVC.Controllers
             };
             foreach (var key in keys)
             {
-                tableFieldModel.Values.Add(key, tableFieldModelCollection[key].FirstOrDefault());
+                if (tableFieldModel.Columns.FirstOrDefault(x => x.Name == key).AttributeType == AttributeType.StringInvl)
+                {
+                    tableFieldModel.Values.Add(key, new StringInvl { Max = tableFieldModelCollection[key][0] ?? "", Min = tableFieldModelCollection[key][1] ?? "" });
+                }
+                else
+                {
+                    tableFieldModel.Values.Add(key, tableFieldModelCollection[key].FirstOrDefault() ?? "");
+                }
             }
             var htmlValues = tableFieldModel.Values.Where(v => table.AttributeProperties.FirstOrDefault(x => x.Name == v.Key).AttributeType == AttributeType.Html);
             foreach (var html in htmlValues)

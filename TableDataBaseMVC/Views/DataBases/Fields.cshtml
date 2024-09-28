@@ -18,7 +18,7 @@
                     @column.Name (@column.AttributeType)
                 </th>
             }
-            <th></th>
+            <th style="min-width: 110px"></th>
         </tr>
     </thead>
     <tbody>
@@ -30,7 +30,31 @@
             @foreach (var column in ((TableDataBase.Models.Table)ViewBag.Table).AttributeProperties.OrderBy(p => p.Name))
             {
                 <th>
-                    <input type="text" class="form-control form-control-sm" form="filterForm" name="@column.Name" value="@ViewBag.FilterValues[column.Name]" />
+                    @if (column.AttributeType == AttributeType.StringInvl)
+                    {
+                        <div class="row">
+                            <div class="col-6">
+                                <div class="input-group">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text input-group-text-sm" id="@column.Name")">Min:</span>
+                                    </div>
+                                    <input type="text" class="form-control form-control-sm" form="filterForm" name="@column.Name" value="@ViewBag.FilterValues[column.Name][0]" />
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="input-group">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text input-group-text-sm" id="@column.Name">Max:</span>
+                                    </div>
+                                    <input type="text" class="form-control form-control-sm" form="filterForm" name="@column.Name" value="@ViewBag.FilterValues[column.Name][1]" />
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <input type="text" class="form-control form-control-sm" form="filterForm" name="@column.Name" value="@ViewBag.FilterValues[column.Name][0]" />
+                    }
                 </th>
             }
             <th><input type="submit" form="filterForm" value="Filter" class="btn btn-primary btn-sm form-control form-control-sm" /></th>
@@ -41,13 +65,22 @@
                 @foreach (var column in field.Values.OrderBy(val => val.Key))
                 {
                     <td>
-                        @if (!(field.Columns.FirstOrDefault(c => c.Name == column.Key).AttributeType == AttributeType.Html))
+                        @if ((field.Columns.FirstOrDefault(c => c.Name == column.Key).AttributeType == AttributeType.Html))
                         {
-                            @column.Value
+                            <button onclick="openHtmlPreview('@column.Value.ToString().Replace("\r\n", "").Replace("\r", "").Replace("\n", "")')" type="button" class="btn btn-sm btn-link">Open preview</button>
+
+
+                        }
+                        else if ((field.Columns.FirstOrDefault(c => c.Name == column.Key).AttributeType == AttributeType.StringInvl))
+                        {
+                            <span>
+                                Min: @column.Value.Min<br />
+                                Max: @column.Value.Max
+                            </span>
                         }
                         else
                         {
-                            <button onclick="openHtmlPreview('@column.Value.ToString().Replace("\r\n", "").Replace("\r", "").Replace("\n", "")')" type="button" class="btn btn-sm btn-link">Open preview</button>
+                            @column.Value
                         }
                     </td>
                 }

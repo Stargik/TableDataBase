@@ -2,6 +2,7 @@
 using TableDataBaseServerService;
 using TableDataBase.Interfaces;
 using TableDataBase.Models;
+using Newtonsoft.Json;
 
 namespace TableDataBase.Services
 {
@@ -25,7 +26,7 @@ namespace TableDataBase.Services
                 TableName = tableField.TableName,
                 DbName = dbName
             };
-            var values = tableField.Values.Select(x => new ValueReply { Name = x.Key, Value = x.Value.ToString() });
+            var values = tableField.Values.Select(x => new ValueReply { Name = x.Key, Value = JsonConvert.SerializeObject(x.Value) });
             addFieldRequest.Values.Add(values);
             client.AddField(addFieldRequest);
         }
@@ -89,7 +90,7 @@ namespace TableDataBase.Services
                 TableName = tableField.TableName,
                 DbName = dbName
             };
-            var values = tableField.Values.Select(x => new ValueReply { Name = x.Key, Value = x.Value.ToString() });
+            var values = tableField.Values.Select(x => new ValueReply { Name = x.Key, Value = JsonConvert.SerializeObject(x.Value) });
             updateFieldRequest.Values.Add(values);
             client.UpdateField(updateFieldRequest);
         }
