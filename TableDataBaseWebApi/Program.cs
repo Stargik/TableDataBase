@@ -1,4 +1,7 @@
 ﻿
+using TableDataBase.Interfaces;
+using TableDataBase.Services;
+
 namespace TableDataBaseWebApi;
 
 public class Program
@@ -10,6 +13,8 @@ public class Program
         // Add services to the container.
 
         builder.Services.AddControllers();
+        builder.Services.AddScoped<IDataBaseSchemaServiceFactory, DataBaseSchemaClientServiceFactory>();
+        builder.Services.AddScoped<IDataBaseServiceFactory, DataBaseClientServiceFactory>();
         // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen();

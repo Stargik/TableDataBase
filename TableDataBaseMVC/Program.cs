@@ -14,6 +14,9 @@ public class Program
         // Add services to the container.
         builder.Services.AddControllersWithViews();
 
+        builder.Services.AddScoped<IDataBaseSchemaServiceFactory, DataBaseSchemaClientServiceFactory>();
+        builder.Services.AddScoped<IDataBaseServiceFactory, DataBaseClientServiceFactory>();
+
         builder.WebHost.UseElectron(args);
 
         var app = builder.Build();

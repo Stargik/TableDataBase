@@ -18,11 +18,13 @@ namespace TableDataBaseWebApi.Controllers
     {
         private static IDataBaseSchemaService? dataBaseSchemaService;
         private static string? connectionString;
-        private readonly bool isLocal;
+        private readonly IDataBaseSchemaServiceFactory dataBaseSchemaServiceFactory;
+        private readonly IDataBaseServiceFactory dataBaseServiceFactory;
 
-        public DataBasesController(IConfiguration configuration)
+        public DataBasesController(IDataBaseSchemaServiceFactory dataBaseSchemaServiceFactory, IDataBaseServiceFactory dataBaseServiceFactory)
         {
-            isLocal = configuration.GetValue<bool>("IsLocal");
+            this.dataBaseSchemaServiceFactory = dataBaseSchemaServiceFactory;
+            this.dataBaseServiceFactory = dataBaseServiceFactory;
         }
 
         // POST api/setconnection
@@ -32,7 +34,7 @@ namespace TableDataBaseWebApi.Controllers
             connectionString = connection;
             if (!String.IsNullOrEmpty(connectionString))
             {
-                dataBaseSchemaService = new DataBaseSchemaClientService(connectionString);
+                dataBaseSchemaService = dataBaseSchemaServiceFactory.Create(connectionString);
             }
             return Ok();
         }
@@ -205,20 +207,9 @@ namespace TableDataBaseWebApi.Controllers
         
         private IDataBaseService GetDataBaseService(string dbName)
         {
-            if (isLocal)
-            {
-                var fileName = dataBaseSchemaService.GetDbFileNameByName(dbName);
-                var filePath = dataBaseSchemaService.GetDbFilePath();
-                var dataBaseService = new DataBaseService(filePath, fileName);
-                return dataBaseService;
-            }
-            else
-            {
-                var dataBaseService = new DataBaseClientService(connectionString, dbName);
-                return dataBaseService;
-            }
+            var dataBaseService = dataBaseServiceFactory.Create(connectionString, dbName);
+            return dataBaseService;
         }
-
     }
 }
 

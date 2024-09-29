@@ -1,13 +1,9 @@
 ﻿using System.Text.RegularExpressions;
-using System.Xml.Linq;
-using Google.Protobuf.WellKnownTypes;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.CodeAnalysis;
 using Newtonsoft.Json;
 using TableDataBase.Interfaces;
 using TableDataBase.Models;
-using TableDataBase.Services;
 using TableDataBaseMVC.Models;
 using TableDataBaseMVC.Validators;
 
@@ -17,11 +13,13 @@ namespace TableDataBaseMVC.Controllers
     {
 		private static IDataBaseSchemaService? dataBaseSchemaService;
         private static string? connectionString;
-        private readonly bool isLocal;
+        private readonly IDataBaseSchemaServiceFactory dataBaseSchemaServiceFactory;
+        private readonly IDataBaseServiceFactory dataBaseServiceFactory;
 
-        public DataBasesController(IConfiguration configuration)
+        public DataBasesController(IDataBaseSchemaServiceFactory dataBaseSchemaServiceFactory, IDataBaseServiceFactory dataBaseServiceFactory)
         {
-            isLocal = configuration.GetValue<bool>("IsLocal");
+            this.dataBaseSchemaServiceFactory = dataBaseSchemaServiceFactory;
+            this.dataBaseServiceFactory = dataBaseServiceFactory;
         }
 
         public IActionResult SetConnection()
@@ -43,7 +41,7 @@ namespace TableDataBaseMVC.Controllers
             connectionString = connectionModel.ConnectionString;
             if (!String.IsNullOrEmpty(connectionString))
             {
-                dataBaseSchemaService = new DataBaseSchemaClientService(connectionString);
+                dataBaseSchemaService = dataBaseSchemaServiceFactory.Create(connectionString);
             }
             return RedirectToAction(nameof(Index));
         }
@@ -198,7 +196,7 @@ namespace TableDataBaseMVC.Controllers
             return View(table);
         }
 
-        public IActionResult Fields(string tableName, string dbName)
+        public IActionResult Fields(string tableName, string dbName, Dictionary<string, string[]> stringParams)
         {
             var table = dataBaseSchemaService.GetTableByName(tableName, dbName);
             ViewData["DbName"] = dbName;
@@ -208,11 +206,16 @@ namespace TableDataBaseMVC.Controllers
             {
                 if (filter.AttributeType == AttributeType.StringInvl)
                 {
-                    filterValues.Add(filter.Name, Request.Query.ContainsKey(filter.Name) ? new string[] { Request.Query[filter.Name][0].ToString(), Request.Query[filter.Name][1].ToString() } : new string[] { "", "" });
+                    filterValues.Add(filter.Name, stringParams.ContainsKey(filter.Name) ? new string[] {
+                        stringParams[filter.Name][0] is not null ? stringParams[filter.Name][0].ToString() : "",
+                        stringParams[filter.Name][1] is not null ? stringParams[filter.Name][1].ToString() : ""
+                    } : new string[] { "", "" });
                 }
                 else
                 {
-                    filterValues.Add(filter.Name, Request.Query.ContainsKey(filter.Name) ? new string[] { Request.Query[filter.Name].ToString() } : new string[] { "" });
+                    filterValues.Add(filter.Name, stringParams.ContainsKey(filter.Name) ? new string[] {
+                        stringParams[filter.Name][0] is not null ? stringParams[filter.Name][0].ToString() : "" }
+                    : new string[] { "" });
                 }
             }
             ViewBag.FilterValues = filterValues;
@@ -300,7 +303,7 @@ namespace TableDataBaseMVC.Controllers
             {
                 if (tableFieldModel.Columns.FirstOrDefault(x => x.Name == key).AttributeType == AttributeType.StringInvl)
                 {
-                    tableFieldModel.Values.Add(key, new StringInvl { Max = tableFieldModelCollection[key][0] ?? "", Min = tableFieldModelCollection[key][1] ?? "" } );
+                    tableFieldModel.Values.Add(key, new StringInvl { Min = tableFieldModelCollection[key][0] ?? "", Max = tableFieldModelCollection[key][1] ?? "" } );
                 }
                 else
                 {
@@ -312,6 +315,15 @@ namespace TableDataBaseMVC.Controllers
             {
                 if (!CheckHtml.IsValid(html.Value)) {
                     ViewData[$"Error_{html.Key}"] = $"Html is not valid";
+                    return View(tableFieldModel);
+                }
+            }
+            var stringInvlValues = tableFieldModel.Values.Where(v => table.AttributeProperties.FirstOrDefault(x => x.Name == v.Key).AttributeType == AttributeType.StringInvl);
+            foreach (var stringInvl in stringInvlValues)
+            {
+                if (stringInvl.Value.Min > stringInvl.Value.Max)
+                {
+                    ViewData[$"Error_{stringInvl.Key}"] = $"Interval is not valid";
                     return View(tableFieldModel);
                 }
             }
@@ -376,7 +388,7 @@ namespace TableDataBaseMVC.Controllers
             {
                 if (tableFieldModel.Columns.FirstOrDefault(x => x.Name == key).AttributeType == AttributeType.StringInvl)
                 {
-                    tableFieldModel.Values.Add(key, new StringInvl { Max = tableFieldModelCollection[key][0] ?? "", Min = tableFieldModelCollection[key][1] ?? "" });
+                    tableFieldModel.Values.Add(key, new StringInvl { Min = tableFieldModelCollection[key][0] ?? "", Max = tableFieldModelCollection[key][1] ?? "" });
                 }
                 else
                 {
@@ -389,6 +401,15 @@ namespace TableDataBaseMVC.Controllers
                 if (!CheckHtml.IsValid(html.Value))
                 {
                     ViewData[$"Error_{html.Key}"] = $"Html is not valid";
+                    return View(tableFieldModel);
+                }
+            }
+            var stringInvlValues = tableFieldModel.Values.Where(v => table.AttributeProperties.FirstOrDefault(x => x.Name == v.Key).AttributeType == AttributeType.StringInvl);
+            foreach (var stringInvl in stringInvlValues)
+            {
+                if (!String.IsNullOrEmpty(stringInvl.Value.Min) && !String.IsNullOrEmpty(stringInvl.Value.Max) && String.Compare(stringInvl.Value.Min, stringInvl.Value.Max) > 0)
+                {
+                    ViewData[$"Error_{stringInvl.Key}"] = $"Interval is not valid";
                     return View(tableFieldModel);
                 }
             }
@@ -405,18 +426,8 @@ namespace TableDataBaseMVC.Controllers
 
         private IDataBaseService GetDataBaseService(string dbName)
         {
-            if (isLocal)
-            {
-                var fileName = dataBaseSchemaService.GetDbFileNameByName(dbName);
-                var filePath = dataBaseSchemaService.GetDbFilePath();
-                var dataBaseService = new DataBaseService(filePath, fileName);
-                return dataBaseService;
-            }
-            else
-            {
-                var dataBaseService = new DataBaseClientService(connectionString, dbName);
-                return dataBaseService;
-            }
+            var dataBaseService = dataBaseServiceFactory.Create(connectionString, dbName);
+            return dataBaseService;
         }
     }
 }

@@ -18,7 +18,7 @@
 </div>
 <hr />
 <div class="row">
-    <div class="col-md-4">
+    <div class="col-md-8">
         <form asp-action="EditField" id="editForm">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
             <input type="hidden" asp-for="Guid" value="@Model.Guid" />
@@ -55,6 +55,10 @@
                                     <input type="@types[column.AttributeType]" name="@column.Name" value="@Model.Values[@column.Name].Max" class="form-control" />
                                 </div>
                             </div>
+                            @if (ViewData[$"Error_{column.Name}"] is not null)
+                            {
+                                <p class="text-danger">@ViewData[$"Error_{column.Name}"]</p>
+                            }
                         </div>
                     }
                     else
