@@ -321,7 +321,7 @@ namespace TableDataBaseMVC.Controllers
             var stringInvlValues = tableFieldModel.Values.Where(v => table.AttributeProperties.FirstOrDefault(x => x.Name == v.Key).AttributeType == AttributeType.StringInvl);
             foreach (var stringInvl in stringInvlValues)
             {
-                if (stringInvl.Value.Min > stringInvl.Value.Max)
+                if (!String.IsNullOrEmpty(stringInvl.Value.Min) && !String.IsNullOrEmpty(stringInvl.Value.Max) && String.Compare(stringInvl.Value.Min, stringInvl.Value.Max) > 0)
                 {
                     ViewData[$"Error_{stringInvl.Key}"] = $"Interval is not valid";
                     return View(tableFieldModel);
